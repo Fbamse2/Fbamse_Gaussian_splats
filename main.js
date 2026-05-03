@@ -904,181 +904,131 @@ async function main() {
         viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
     }
 
-    // ==================== TOUCH CONTROLS (Mobile) ====================
-    const touchSensitivity = { orbit: 0.005, zoom: 0.01, pan: 0.01 };
-    let touchState = {
-        id0: null,
-        x0: 0, y0: 0,
-        id1: null,
-        x1: 0, y1: 0,
-    };
+    // ==================== MOBILE CONTROLS (Joystick + Look) ====================
 
-    function getTouchPos(e) {
-        return { x: e.clientX, y: e.clientY };
-    }
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    function updateCameraView() {
-        viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
-    }
+    if (isMobile) {
 
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        for (const touch of e.changedTouches) {
-            if (touchState.id0 === null) {
-                touchState.id0 = touch.identifier;
-                touchState.x0 = touch.clientX;
-                touchState.y0 = touch.clientY;
-            } else if (touchState.id1 === null) {
-                touchState.id1 = touch.identifier;
-                touchState.x1 = touch.clientX;
-                touchState.y1 = touch.clientY;
-            }
+        let leftTouchId = null;
+        let rightTouchId = null;
+
+        let joystickStart = { x: 0, y: 0 };
+        let joystickDelta = { x: 0, y: 0 };
+
+        let lookPrev = { x: 0, y: 0 };
+
+        const maxJoystickRadius = 60;
+        const lookSensitivity = 0.004;
+        const moveSpeedMobile = 0.08;
+
+        function updateCameraView() {
+            viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
         }
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        const touches = e.touches;
-
-        // Update stored touches
-        let found0 = false, found1 = false;
-        for (const touch of touches) {
-            if (touch.identifier === touchState.id0) {
-                touchState.x0 = touch.clientX;
-                touchState.y0 = touch.clientY;
-                found0 = true;
-            } else if (touch.identifier === touchState.id1) {
-                touchState.x1 = touch.clientX;
-                touchState.y1 = touch.clientY;
-                found1 = true;
-            }
-        }
-        if (!found0) { touchState.id0 = null; touchState.id1 = null; return; }
-        if (!found1) { touchState.id1 = null; }
-
-        if (touchState.id1 === null) {
-            // One finger – orbit (yaw/pitch)
-            const dx = touchState.x0 - touchState.x0_prev || 0;
-            const dy = touchState.y0 - touchState.y0_prev || 0;
-            // We need previous position; we'll compute delta from event
-            // Better to store previous positions in the move handler
-        }
-    }, { passive: false });
-
-    // Improved touch handlers with proper delta tracking
-    {
-        let prevX0 = 0, prevY0 = 0, prevX1 = 0, prevY1 = 0;
-        let prevDist = 0;
 
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             for (const touch of e.changedTouches) {
-                if (touchState.id0 === null) {
-                    touchState.id0 = touch.identifier;
-                    touchState.x0 = touch.clientX;
-                    touchState.y0 = touch.clientY;
-                    prevX0 = touch.clientX;
-                    prevY0 = touch.clientY;
-                } else if (touchState.id1 === null) {
-                    touchState.id1 = touch.identifier;
-                    touchState.x1 = touch.clientX;
-                    touchState.y1 = touch.clientY;
-                    prevX1 = touch.clientX;
-                    prevY1 = touch.clientY;
-                    prevDist = Math.hypot(touchState.x0 - touchState.x1, touchState.y0 - touchState.y1);
+                const isLeftSide = touch.clientX < window.innerWidth / 2;
+
+                if (isLeftSide && leftTouchId === null) {
+                    leftTouchId = touch.identifier;
+                    joystickStart.x = touch.clientX;
+                    joystickStart.y = touch.clientY;
+                    joystickDelta.x = 0;
+                    joystickDelta.y = 0;
+                } else if (!isLeftSide && rightTouchId === null) {
+                    rightTouchId = touch.identifier;
+                    lookPrev.x = touch.clientX;
+                    lookPrev.y = touch.clientY;
                 }
             }
         }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touches = e.touches;
-            let curX0, curY0, curX1, curY1;
-            let has0 = false, has1 = false;
+            for (const touch of e.touches) {
 
-            for (const touch of touches) {
-                if (touch.identifier === touchState.id0) {
-                    curX0 = touch.clientX;
-                    curY0 = touch.clientY;
-                    has0 = true;
-                } else if (touch.identifier === touchState.id1) {
-                    curX1 = touch.clientX;
-                    curY1 = touch.clientY;
-                    has1 = true;
+                // LEFT SIDE = JOYSTICK
+                if (touch.identifier === leftTouchId) {
+                    let dx = touch.clientX - joystickStart.x;
+                    let dy = touch.clientY - joystickStart.y;
+
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > maxJoystickRadius) {
+                        dx = (dx / dist) * maxJoystickRadius;
+                        dy = (dy / dist) * maxJoystickRadius;
+                    }
+
+                    joystickDelta.x = dx / maxJoystickRadius;
+                    joystickDelta.y = dy / maxJoystickRadius;
                 }
-            }
 
-            if (!has0) {
-                touchState.id0 = touchState.id1 = null;
-                return;
-            }
+                // RIGHT SIDE = LOOK
+                if (touch.identifier === rightTouchId) {
+                    const dx = touch.clientX - lookPrev.x;
+                    const dy = touch.clientY - lookPrev.y;
 
-            if (has0 && !has1) {
-                // One finger orbit
-                const dx = curX0 - prevX0;
-                const dy = curY0 - prevY0;
-                cameraRotation[0] += dx * touchSensitivity.orbit;
-                cameraRotation[1] -= dy * touchSensitivity.orbit;
-                cameraRotation[1] = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraRotation[1]));
-                updateCameraView();
-                prevX0 = curX0;
-                prevY0 = curY0;
-            } else if (has0 && has1) {
-                // Two fingers
-                const curDist = Math.hypot(curX0 - curX1, curY0 - curY1);
-                const pinchDelta = curDist - prevDist;
-                // Zoom: move camera along forward direction
-                const yaw = cameraRotation[0];
-                const pitch = cameraRotation[1];
-                const cosYaw = Math.cos(yaw), sinYaw = Math.sin(yaw);
-                const cosPitch = Math.cos(pitch), sinPitch = Math.sin(pitch);
-                const forward = [-sinYaw * cosPitch, sinPitch, -cosYaw * cosPitch];
-                const zoomSpeed = touchSensitivity.zoom;
-                cameraPosition[0] += forward[0] * pinchDelta * zoomSpeed;
-                cameraPosition[1] += forward[1] * pinchDelta * zoomSpeed;
-                cameraPosition[2] += forward[2] * pinchDelta * zoomSpeed;
+                    cameraRotation[0] += dx * lookSensitivity;
+                    cameraRotation[1] -= dy * lookSensitivity;
 
-                // Pan: average movement of two touches
-                const avgDx = ((curX0 + curX1) - (prevX0 + prevX1)) * 0.5;
-                const avgDy = ((curY0 + curY1) - (prevY0 + prevY1)) * 0.5;
-                const right = [cosYaw, 0, -sinYaw];
-                const up = [sinYaw * sinPitch, cosPitch, cosYaw * sinPitch];
-                cameraPosition[0] += right[0] * avgDx * touchSensitivity.pan + up[0] * (-avgDy) * touchSensitivity.pan;
-                cameraPosition[1] += right[1] * avgDx * touchSensitivity.pan + up[1] * (-avgDy) * touchSensitivity.pan;
-                cameraPosition[2] += right[2] * avgDx * touchSensitivity.pan + up[2] * (-avgDy) * touchSensitivity.pan;
+                    cameraRotation[1] = Math.max(
+                        -Math.PI / 2 + 0.01,
+                        Math.min(Math.PI / 2 - 0.01, cameraRotation[1])
+                    );
 
-                updateCameraView();
-                prevDist = curDist;
-                prevX0 = curX0; prevY0 = curY0;
-                prevX1 = curX1; prevY1 = curY1;
+                    lookPrev.x = touch.clientX;
+                    lookPrev.y = touch.clientY;
+
+                    updateCameraView();
+                }
             }
         }, { passive: false });
 
         canvas.addEventListener('touchend', (e) => {
             for (const touch of e.changedTouches) {
-                if (touch.identifier === touchState.id0) {
-                    // If only one finger was active, clear both; if two, clear the first and keep second as new id0
-                    if (touchState.id1 !== null) {
-                        touchState.id0 = touchState.id1;
-                        touchState.x0 = touchState.x1;
-                        touchState.y0 = touchState.y1;
-                        prevX0 = prevX1;
-                        prevY0 = prevY1;
-                        touchState.id1 = null;
-                    } else {
-                        touchState.id0 = null;
-                    }
-                } else if (touch.identifier === touchState.id1) {
-                    touchState.id1 = null;
+                if (touch.identifier === leftTouchId) {
+                    leftTouchId = null;
+                    joystickDelta.x = 0;
+                    joystickDelta.y = 0;
+                }
+                if (touch.identifier === rightTouchId) {
+                    rightTouchId = null;
                 }
             }
-            prevDist = 0;
         });
 
-        canvas.addEventListener('touchcancel', (e) => {
-            touchState.id0 = touchState.id1 = null;
-            prevDist = 0;
+        canvas.addEventListener('touchcancel', () => {
+            leftTouchId = null;
+            rightTouchId = null;
+            joystickDelta.x = 0;
+            joystickDelta.y = 0;
         });
+
+        // Inject movement into your existing frame loop
+        const originalFrame = frame;
+        frame = function(now) {
+
+            // --- JOYSTICK MOVEMENT ---
+            if (leftTouchId !== null) {
+                const yaw = cameraRotation[0];
+                const pitch = cameraRotation[1];
+
+                const cosYaw = Math.cos(yaw);
+                const sinYaw = Math.sin(yaw);
+                const cosPitch = Math.cos(pitch);
+                const sinPitch = Math.sin(pitch);
+
+                const forward = [-sinYaw * cosPitch, sinPitch, -cosYaw * cosPitch];
+                const right = [cosYaw, 0, -sinYaw];
+
+                cameraPosition[0] += (-forward[0] * joystickDelta.y + right[0] * joystickDelta.x) * moveSpeedMobile;
+                cameraPosition[1] += (-forward[1] * joystickDelta.y) * moveSpeedMobile;
+                cameraPosition[2] += (-forward[2] * joystickDelta.y + right[2] * joystickDelta.x) * moveSpeedMobile;
+
+                updateCameraView();
+            }
+
+            originalFrame(now);
+        };
     }
 
     // ==================== KEYBOARD & MOUSE (unchanged) ====================
