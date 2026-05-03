@@ -1,3 +1,8 @@
+// =====================================================
+//  main.js – WebGL Gaussian Splat Viewer (Free Cam)
+//  with added mobile touch controls
+// =====================================================
+
 let cameras = [
     {
         id: 0,
@@ -695,20 +700,11 @@ async function main() {
     try {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
     } catch (err) { }
-    /*
-    const url = new URL(
-        params.get("url") || "output.splat",
-        window.location.href,
-    );
-    */
 
     const url = new URL(
-        // "nike.splat",
-        // location.href,
         params.get("url") || "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
         "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
     );
-
 
     const req = await fetch(url, {
         mode: "cors",
@@ -877,7 +873,7 @@ async function main() {
     let activeKeys = new Set();
     let currentCameraIndex = 0;
 
-    // Mouse look controls - fixed with proper sensitivity and no jump
+    // Mouse look controls
     canvas.addEventListener("click", () => {
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         canvas.requestPointerLock();
@@ -902,13 +898,190 @@ async function main() {
         if (!mouseLocked) return;
         carousel = false;
         const sensitivity = 0.002;
-        // Fixed: positive movementX turns right (add to yaw)
         cameraRotation[0] += e.movementX * sensitivity;
-        // Fixed: positive movementY looks UP (subtract from pitch) - standard FPS
         cameraRotation[1] -= e.movementY * sensitivity;
         cameraRotation[1] = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraRotation[1]));
         viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
     }
+
+    // ==================== TOUCH CONTROLS (Mobile) ====================
+    const touchSensitivity = { orbit: 0.005, zoom: 0.01, pan: 0.01 };
+    let touchState = {
+        id0: null,
+        x0: 0, y0: 0,
+        id1: null,
+        x1: 0, y1: 0,
+    };
+
+    function getTouchPos(e) {
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    function updateCameraView() {
+        viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
+    }
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        for (const touch of e.changedTouches) {
+            if (touchState.id0 === null) {
+                touchState.id0 = touch.identifier;
+                touchState.x0 = touch.clientX;
+                touchState.y0 = touch.clientY;
+            } else if (touchState.id1 === null) {
+                touchState.id1 = touch.identifier;
+                touchState.x1 = touch.clientX;
+                touchState.y1 = touch.clientY;
+            }
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touches = e.touches;
+
+        // Update stored touches
+        let found0 = false, found1 = false;
+        for (const touch of touches) {
+            if (touch.identifier === touchState.id0) {
+                touchState.x0 = touch.clientX;
+                touchState.y0 = touch.clientY;
+                found0 = true;
+            } else if (touch.identifier === touchState.id1) {
+                touchState.x1 = touch.clientX;
+                touchState.y1 = touch.clientY;
+                found1 = true;
+            }
+        }
+        if (!found0) { touchState.id0 = null; touchState.id1 = null; return; }
+        if (!found1) { touchState.id1 = null; }
+
+        if (touchState.id1 === null) {
+            // One finger – orbit (yaw/pitch)
+            const dx = touchState.x0 - touchState.x0_prev || 0;
+            const dy = touchState.y0 - touchState.y0_prev || 0;
+            // We need previous position; we'll compute delta from event
+            // Better to store previous positions in the move handler
+        }
+    }, { passive: false });
+
+    // Improved touch handlers with proper delta tracking
+    {
+        let prevX0 = 0, prevY0 = 0, prevX1 = 0, prevY1 = 0;
+        let prevDist = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            for (const touch of e.changedTouches) {
+                if (touchState.id0 === null) {
+                    touchState.id0 = touch.identifier;
+                    touchState.x0 = touch.clientX;
+                    touchState.y0 = touch.clientY;
+                    prevX0 = touch.clientX;
+                    prevY0 = touch.clientY;
+                } else if (touchState.id1 === null) {
+                    touchState.id1 = touch.identifier;
+                    touchState.x1 = touch.clientX;
+                    touchState.y1 = touch.clientY;
+                    prevX1 = touch.clientX;
+                    prevY1 = touch.clientY;
+                    prevDist = Math.hypot(touchState.x0 - touchState.x1, touchState.y0 - touchState.y1);
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touches = e.touches;
+            let curX0, curY0, curX1, curY1;
+            let has0 = false, has1 = false;
+
+            for (const touch of touches) {
+                if (touch.identifier === touchState.id0) {
+                    curX0 = touch.clientX;
+                    curY0 = touch.clientY;
+                    has0 = true;
+                } else if (touch.identifier === touchState.id1) {
+                    curX1 = touch.clientX;
+                    curY1 = touch.clientY;
+                    has1 = true;
+                }
+            }
+
+            if (!has0) {
+                touchState.id0 = touchState.id1 = null;
+                return;
+            }
+
+            if (has0 && !has1) {
+                // One finger orbit
+                const dx = curX0 - prevX0;
+                const dy = curY0 - prevY0;
+                cameraRotation[0] += dx * touchSensitivity.orbit;
+                cameraRotation[1] -= dy * touchSensitivity.orbit;
+                cameraRotation[1] = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraRotation[1]));
+                updateCameraView();
+                prevX0 = curX0;
+                prevY0 = curY0;
+            } else if (has0 && has1) {
+                // Two fingers
+                const curDist = Math.hypot(curX0 - curX1, curY0 - curY1);
+                const pinchDelta = curDist - prevDist;
+                // Zoom: move camera along forward direction
+                const yaw = cameraRotation[0];
+                const pitch = cameraRotation[1];
+                const cosYaw = Math.cos(yaw), sinYaw = Math.sin(yaw);
+                const cosPitch = Math.cos(pitch), sinPitch = Math.sin(pitch);
+                const forward = [-sinYaw * cosPitch, sinPitch, -cosYaw * cosPitch];
+                const zoomSpeed = touchSensitivity.zoom;
+                cameraPosition[0] += forward[0] * pinchDelta * zoomSpeed;
+                cameraPosition[1] += forward[1] * pinchDelta * zoomSpeed;
+                cameraPosition[2] += forward[2] * pinchDelta * zoomSpeed;
+
+                // Pan: average movement of two touches
+                const avgDx = ((curX0 + curX1) - (prevX0 + prevX1)) * 0.5;
+                const avgDy = ((curY0 + curY1) - (prevY0 + prevY1)) * 0.5;
+                const right = [cosYaw, 0, -sinYaw];
+                const up = [sinYaw * sinPitch, cosPitch, cosYaw * sinPitch];
+                cameraPosition[0] += right[0] * avgDx * touchSensitivity.pan + up[0] * (-avgDy) * touchSensitivity.pan;
+                cameraPosition[1] += right[1] * avgDx * touchSensitivity.pan + up[1] * (-avgDy) * touchSensitivity.pan;
+                cameraPosition[2] += right[2] * avgDx * touchSensitivity.pan + up[2] * (-avgDy) * touchSensitivity.pan;
+
+                updateCameraView();
+                prevDist = curDist;
+                prevX0 = curX0; prevY0 = curY0;
+                prevX1 = curX1; prevY1 = curY1;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === touchState.id0) {
+                    // If only one finger was active, clear both; if two, clear the first and keep second as new id0
+                    if (touchState.id1 !== null) {
+                        touchState.id0 = touchState.id1;
+                        touchState.x0 = touchState.x1;
+                        touchState.y0 = touchState.y1;
+                        prevX0 = prevX1;
+                        prevY0 = prevY1;
+                        touchState.id1 = null;
+                    } else {
+                        touchState.id0 = null;
+                    }
+                } else if (touch.identifier === touchState.id1) {
+                    touchState.id1 = null;
+                }
+            }
+            prevDist = 0;
+        });
+
+        canvas.addEventListener('touchcancel', (e) => {
+            touchState.id0 = touchState.id1 = null;
+            prevDist = 0;
+        });
+    }
+
+    // ==================== KEYBOARD & MOUSE (unchanged) ====================
 
     window.addEventListener("keydown", (e) => {
         carousel = false;
@@ -935,12 +1108,10 @@ async function main() {
         }
         let isSaving = false;
         if (e.code == "KeyV") {
-            isSaving = true; // Prevent hashchange from reloading
+            isSaving = true;
             
-            // Save position and full 3x3 rotation matrix (9 values)
             const pos = cameraPosition.map(p => Math.round(p * 100) / 100);
             
-            // Get the 3x3 rotation matrix from the current camera orientation
             const yaw = cameraRotation[0];
             const pitch = cameraRotation[1];
             const roll = cameraRotation[2];
@@ -952,7 +1123,6 @@ async function main() {
             const cr = Math.cos(roll);
             const sr = Math.sin(roll);
             
-            // Build the 3x3 rotation matrix
             const forward = [-sy * cp, sp, -cy * cp];
             const right = [cy, 0, -sy];
             const up = [sy * sp, cp, cy * sp];
@@ -963,7 +1133,6 @@ async function main() {
                 right[2], up[2], -forward[2]
             ];
             
-            // Round to 2 decimal places
             const rot = rotMatrix.map(r => Math.round(r * 100) / 100);
             
             const hashData = `[${pos[0]},${pos[1]},${pos[2]}][${rot.join(",")}]`;
@@ -972,7 +1141,7 @@ async function main() {
             
             setTimeout(() => {
                 if (camid.innerText === "saved!") camid.innerText = "";
-                isSaving = false; // Re-enable hashchange after saving
+                isSaving = false;
             }, 100);
         }
     });
@@ -996,7 +1165,7 @@ async function main() {
     const moveSpeed = 0.1;
 
     const frame = (now) => {
-        // Get camera direction vectors
+        // Keyboard movement
         const yaw = cameraRotation[0];
         const pitch = cameraRotation[1];
         const cosYaw = Math.cos(yaw);
@@ -1004,19 +1173,16 @@ async function main() {
         const cosPitch = Math.cos(pitch);
         const sinPitch = Math.sin(pitch);
         
-        // Forward direction (where camera is looking)
         const forwardX = -sinYaw * cosPitch;
         const forwardZ = -cosYaw * cosPitch;
         const forwardY = sinPitch;
         
-        // Right direction
         const rightX = cosYaw;
         const rightZ = -sinYaw;
         
         const moveDelta = { x: 0, z: 0, y: 0 };
         const currentSpeed = moveSpeed * (activeKeys.has("ShiftLeft") ? 2 : 1);
         
-        // W = forward, S = backward
         if (activeKeys.has("KeyW")) {
             moveDelta.x -= forwardX * currentSpeed;
             moveDelta.z -= forwardZ * currentSpeed;
@@ -1122,31 +1288,27 @@ async function main() {
     };
 
     window.addEventListener("hashchange", (e) => {
-        if (isSaving) return; // Skip if we're the one who set the hash
+        if (isSaving) return;
         
         try {
             const hash = location.hash.slice(1);
             if (!hash) return;
             
-            // Check for format: [x,y,z][r0,r1,r2,r3,r4,r5,r6,r7,r8]
             const match = hash.match(/\[([-\d.]+),([-\d.]+),([-\d.]+)\]\[([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\]/);
             
             if (match) {
-                // Load position
                 cameraPosition = [
                     parseFloat(match[1]),
                     parseFloat(match[2]),
                     parseFloat(match[3])
                 ];
                 
-                // Load the full 3x3 rotation matrix (9 values)
                 const rotMatrix = [
                     parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6]),
                     parseFloat(match[7]), parseFloat(match[8]), parseFloat(match[9]),
                     parseFloat(match[10]), parseFloat(match[11]), parseFloat(match[12])
                 ];
                 
-                // Create view matrix from position and rotation matrix
                 const R = rotMatrix;
                 const t = cameraPosition;
                 viewMatrix = [
@@ -1159,13 +1321,9 @@ async function main() {
                     1
                 ];
                 
-                // Also update cameraRotation from matrix for continued movement
-                cameraRotation[0] = Math.atan2(R[4], R[0]); // yaw
-                cameraRotation[1] = Math.asin(-R[2]); // pitch
-                cameraRotation[2] = 0; // roll
-                
-                console.log("Loaded position:", cameraPosition);
-                console.log("Loaded rotation matrix:", rotMatrix);
+                cameraRotation[0] = Math.atan2(R[4], R[0]);
+                cameraRotation[1] = Math.asin(-R[2]);
+                cameraRotation[2] = 0;
             }
         } catch (err) { 
             console.error("Failed to parse hash:", err);
