@@ -1,115 +1,154 @@
-// =====================================================
-//  main.js – WebGL Gaussian Splat Viewer (Free Cam)
-//  with added mobile touch controls
-// =====================================================
-
 let cameras = [
     {
         id: 0,
-        position: [-2.53, -5.32, -16.74],
+        img_name: "00001",
+        width: 1959,
+        height: 1090,
+        position: [
+            -3.0089893469241797, -0.11086489695181866, -3.7527640949141428,
+        ],
         rotation: [
-            [1, -0.02, 0.04],
-            [0, 0.92, 0.39],
-            [-0.05, -0.39, 0.92],
+            [0.876134201218856, 0.06925962026449776, 0.47706599800804744],
+            [-0.04747421839895102, 0.9972110940209488, -0.057586739349882114],
+            [-0.4797239414934443, 0.027805376500959853, 0.8769787916452908],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 1,
-        position: [0, 0, 0],
+        img_name: "00009",
+        width: 1959,
+        height: 1090,
+        position: [
+            -2.5199776022057296, -0.09704735754873686, -3.6247725540304545,
+        ],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [0.9982731285632193, -0.011928707708098955, -0.05751927260507243],
+            [0.0065061360949636325, 0.9955928229282383, -0.09355533724430458],
+            [0.058381769258182864, 0.09301955098900708, 0.9939511719154457],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 2,
-        position: [0, 0, 0],
+        img_name: "00017",
+        width: 1959,
+        height: 1090,
+        position: [
+            -0.7737533667465242, -0.3364271945329695, -2.9358969417573753,
+        ],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [0.9998813418672372, 0.013742375651625236, -0.0069605529394208224],
+            [-0.014268370388586709, 0.996512943252834, -0.08220929105659476],
+            [0.00580653013657589, 0.08229885200307129, 0.9965907801935302],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 3,
-        position: [0, 0, 0],
+        img_name: "00025",
+        width: 1959,
+        height: 1090,
+        position: [
+            1.2198221749590001, -0.2196687861401182, -2.3183162007028453,
+        ],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [0.9208648867765482, 0.0012010625395201253, 0.389880004297208],
+            [-0.06298204172269357, 0.987319521752825, 0.14571693239364383],
+            [-0.3847611242348369, -0.1587410451475895, 0.9092635249821667],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 4,
-        position: [0, 0, 0],
+        img_name: "00033",
+        width: 1959,
+        height: 1090,
+        position: [
+            1.742387858893817, -0.13848225198886954, -2.0566370113193146,
+        ],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [0.24669889292141334, -0.08370189346592856, -0.9654706879349405],
+            [0.11343747891376445, 0.9919082664242816, -0.05700815184573074],
+            [0.9624300466054861, -0.09545671285663988, 0.2541976029815521],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 5,
-        position: [0, 0, 0],
+        img_name: "00041",
+        width: 1959,
+        height: 1090,
+        position: [
+            3.6567309419223935, -0.16470990600750707, -1.3458085590422042,
+        ],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [0.2341293058324528, -0.02968330457755884, -0.9717522161434825],
+            [0.10270823606832301, 0.99469554638321, -0.005638106875665722],
+            [0.9667649592295676, -0.09848690996657204, 0.2359360976431732],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 6,
-        position: [0, 0, 0],
+        img_name: "00049",
+        width: 1959,
+        height: 1090,
+        position: [
+            3.9013554243203497, -0.2597500978038105, -0.8106154188297828,
+        ],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [0.6717235545638952, -0.015718162115524837, -0.7406351366386528],
+            [0.055627354673906296, 0.9980224478387622, 0.029270992841185218],
+            [0.7387104058127439, -0.060861588786650656, 0.6712695459756353],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 7,
-        position: [0, 0, 0],
+        img_name: "00057",
+        width: 1959,
+        height: 1090,
+        position: [4.742994605467533, -0.05591660945412069, 0.9500365976084458],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [-0.17042655709210375, 0.01207080756938, -0.9852964448542146],
+            [0.1165090336695526, 0.9931575292530063, -0.00798543433078162],
+            [0.9784581921120181, -0.1161568667478904, -0.1706667764862097],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 8,
-        position: [0, 0, 0],
+        img_name: "00065",
+        width: 1959,
+        height: 1090,
+        position: [4.34676307626522, 0.08168160516967145, 1.0876221470355405],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [-0.003575447631888379, -0.044792503246552894, -0.9989899137764799],
+            [0.10770152645126597, 0.9931680875192705, -0.04491693593046672],
+            [0.9941768441149182, -0.10775333677534978, 0.0012732004866391048],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
     },
     {
         id: 9,
-        position: [0, 0, 0],
+        img_name: "00073",
+        width: 1959,
+        height: 1090,
+        position: [3.264984351114202, 0.078974937336732, 1.0117200284114904],
         rotation: [
-            [0,0,0],
-            [0,0,0],
-            [0,0,0],
+            [-0.026919994628162257, -0.1565891128261527, -0.9872968974090509],
+            [0.08444552208239385, 0.983768234577625, -0.1583319754069128],
+            [0.9960643893290491, -0.0876350978794554, -0.013259786205163005],
         ],
         fy: 1164.6601287484507,
         fx: 1159.5880733038064,
@@ -145,6 +184,15 @@ function getViewMatrix(camera) {
     ].flat();
     return camToWorld;
 }
+// function translate4(a, x, y, z) {
+//     return [
+//         ...a.slice(0, 12),
+//         a[0] * x + a[4] * y + a[8] * z + a[12],
+//         a[1] * x + a[5] * y + a[9] * z + a[13],
+//         a[2] * x + a[6] * y + a[10] * z + a[14],
+//         a[3] * x + a[7] * y + a[11] * z + a[15],
+//     ];
+// }
 
 function multiply4(a, b) {
     return [
@@ -251,6 +299,11 @@ function createWorker(self) {
     let buffer;
     let vertexCount = 0;
     let viewProj;
+    // 6*4 + 4 + 4 = 8*4
+    // XYZ - Position (Float32)
+    // XYZ - Scale (Float32)
+    // RGBA - colors (uint8)
+    // IJKL - quaternion/rot (uint8)
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
     let lastProj = [];
     let depthIndex = new Uint32Array();
@@ -297,22 +350,29 @@ function createWorker(self) {
         const f_buffer = new Float32Array(buffer);
         const u_buffer = new Uint8Array(buffer);
 
-        var texwidth = 1024 * 2;
-        var texheight = Math.ceil((2 * vertexCount) / texwidth);
-        var texdata = new Uint32Array(texwidth * texheight * 4);
+        var texwidth = 1024 * 2; // Set to your desired width
+        var texheight = Math.ceil((2 * vertexCount) / texwidth); // Set to your desired height
+        var texdata = new Uint32Array(texwidth * texheight * 4); // 4 components per pixel (RGBA)
         var texdata_c = new Uint8Array(texdata.buffer);
         var texdata_f = new Float32Array(texdata.buffer);
 
+        // Here we convert from a .splat file buffer into a texture
+        // With a little bit more foresight perhaps this texture file
+        // should have been the native format as it'd be very easy to
+        // load it into webgl.
         for (let i = 0; i < vertexCount; i++) {
+            // x, y, z
             texdata_f[8 * i + 0] = f_buffer[8 * i + 0];
             texdata_f[8 * i + 1] = f_buffer[8 * i + 1];
             texdata_f[8 * i + 2] = f_buffer[8 * i + 2];
 
+            // r, g, b, a
             texdata_c[4 * (8 * i + 7) + 0] = u_buffer[32 * i + 24 + 0];
             texdata_c[4 * (8 * i + 7) + 1] = u_buffer[32 * i + 24 + 1];
             texdata_c[4 * (8 * i + 7) + 2] = u_buffer[32 * i + 24 + 2];
             texdata_c[4 * (8 * i + 7) + 3] = u_buffer[32 * i + 24 + 3];
 
+            // quaternions
             let scale = [
                 f_buffer[8 * i + 3 + 0],
                 f_buffer[8 * i + 3 + 1],
@@ -325,6 +385,7 @@ function createWorker(self) {
                 (u_buffer[32 * i + 28 + 3] - 128) / 128,
             ];
 
+            // Compute the matrix product of S and R (M = S * R)
             const M = [
                 1.0 - 2.0 * (rot[2] * rot[2] + rot[3] * rot[3]),
                 2.0 * (rot[1] * rot[2] + rot[0] * rot[3]),
@@ -372,6 +433,7 @@ function createWorker(self) {
             lastVertexCount = vertexCount;
         }
 
+        console.time("sort");
         let maxDepth = -Infinity;
         let minDepth = Infinity;
         let sizeList = new Int32Array(vertexCount);
@@ -387,6 +449,7 @@ function createWorker(self) {
             if (depth < minDepth) minDepth = depth;
         }
 
+        // This is a 16 bit single-pass counting sort
         let depthInv = (256 * 256 - 1) / (maxDepth - minDepth);
         let counts0 = new Uint32Array(256 * 256);
         for (let i = 0; i < vertexCount; i++) {
@@ -400,6 +463,8 @@ function createWorker(self) {
         for (let i = 0; i < vertexCount; i++)
             depthIndex[starts0[sizeList[i]]++] = i;
 
+        console.timeEnd("sort");
+
         lastProj = viewProj;
         self.postMessage({ depthIndex, viewProj, vertexCount }, [
             depthIndex.buffer,
@@ -408,12 +473,14 @@ function createWorker(self) {
 
     function processPlyBuffer(inputBuffer) {
         const ubuf = new Uint8Array(inputBuffer);
+        // 10KB ought to be enough for a header...
         const header = new TextDecoder().decode(ubuf.slice(0, 1024 * 10));
         const header_end = "end_header\n";
         const header_end_index = header.indexOf(header_end);
         if (header_end_index < 0)
             throw new Error("Unable to read .ply file header");
         const vertexCount = parseInt(/element vertex (\d+)\n/.exec(header)[1]);
+        console.log("Vertex Count", vertexCount);
         let row_offset = 0,
             offsets = {},
             types = {};
@@ -436,6 +503,7 @@ function createWorker(self) {
             offsets[name] = row_offset;
             row_offset += parseInt(arrayType.replace(/[^\d]/g, "")) / 8;
         }
+        console.log("Bytes per row", row_offset, types, offsets);
 
         let dataView = new DataView(
             inputBuffer,
@@ -455,6 +523,7 @@ function createWorker(self) {
             },
         );
 
+        console.time("calculate importance");
         let sizeList = new Float32Array(vertexCount);
         let sizeIndex = new Uint32Array(vertexCount);
         for (row = 0; row < vertexCount; row++) {
@@ -467,12 +536,21 @@ function createWorker(self) {
             const opacity = 1 / (1 + Math.exp(-attrs.opacity));
             sizeList[row] = size * opacity;
         }
+        console.timeEnd("calculate importance");
 
+        console.time("sort");
         sizeIndex.sort((b, a) => sizeList[a] - sizeList[b]);
+        console.timeEnd("sort");
 
+        // 6*4 + 4 + 4 = 8*4
+        // XYZ - Position (Float32)
+        // XYZ - Scale (Float32)
+        // RGBA - colors (uint8)
+        // IJKL - quaternion/rot (uint8)
         const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
         const buffer = new ArrayBuffer(rowLength * vertexCount);
 
+        console.time("build buffer");
         for (let j = 0; j < vertexCount; j++) {
             row = sizeIndex[j];
 
@@ -536,6 +614,7 @@ function createWorker(self) {
                 rgba[3] = 255;
             }
         }
+        console.timeEnd("build buffer");
         return buffer;
     }
 
@@ -652,63 +731,35 @@ void main () {
 
 `.trim();
 
-// Free cam state - start at y=5, x=0, z=0
-let cameraPosition = [0, -5, 0];
-let cameraRotation = [0, 0, 0];
-let mouseLocked = false;
-
-function createViewMatrix(position, rotation) {
-    const yaw = rotation[0];
-    const pitch = rotation[1];
-    const roll = rotation[2];
-    
-    const cy = Math.cos(yaw);
-    const sy = Math.sin(yaw);
-    const cp = Math.cos(pitch);
-    const sp = Math.sin(pitch);
-    const cr = Math.cos(roll);
-    const sr = Math.sin(roll);
-    
-    const forward = [-sy * cp, sp, -cy * cp];
-    const right = [cy, 0, -sy];
-    const up = [sy * sp, cp, cy * sp];
-    
-    const R = [
-        right[0], up[0], -forward[0], 0,
-        right[1], up[1], -forward[1], 0,
-        right[2], up[2], -forward[2], 0,
-        0, 0, 0, 1
-    ];
-    
-    const t = position;
-    return [
-        R[0], R[1], R[2], R[3],
-        R[4], R[5], R[6], R[7],
-        R[8], R[9], R[10], R[11],
-        -t[0] * R[0] - t[1] * R[4] - t[2] * R[8],
-        -t[0] * R[1] - t[1] * R[5] - t[2] * R[9],
-        -t[0] * R[2] - t[1] * R[6] - t[2] * R[10],
-        1
-    ];
-}
-
-let viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
-
+let defaultViewMatrix = [
+    0.47, 0.04, 0.88, 0, -0.11, 0.99, 0.02, 0, -0.88, -0.11, 0.47, 0, 0.07,
+    0.03, 6.55, 1,
+];
+let viewMatrix = defaultViewMatrix;
 async function main() {
-    let carousel = false; // Disabled carousel completely
+    let carousel = true;
     const params = new URLSearchParams(location.search);
     try {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+        carousel = false;
     } catch (err) { }
-
+    /*
     const url = new URL(
+        // "nike.splat",
+        // location.href,
+        params.get("url") || "train.splat",
+        "https://huggingface.co/cakewalk/splat-data/resolve/main/",
+    );
+    */
+    const url = new URL(
+        // "nike.splat",
+        // location.href,
         params.get("url") || "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
         "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
     );
-
     const req = await fetch(url, {
-        mode: "cors",
-        credentials: "omit",
+        mode: "cors", // no-cors, *cors, same-origin
+        credentials: "omit", // include, *same-origin, omit
     });
     console.log(req);
     if (req.status != 200)
@@ -761,7 +812,9 @@ async function main() {
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
         console.error(gl.getProgramInfoLog(program));
 
-    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.DEPTH_TEST); // Disable depth testing
+
+    // Enable blending
     gl.enable(gl.BLEND);
     gl.blendFuncSeparate(
         gl.ONE_MINUS_DST_ALPHA,
@@ -776,6 +829,7 @@ async function main() {
     const u_focal = gl.getUniformLocation(program, "focal");
     const u_view = gl.getUniformLocation(program, "view");
 
+    // positions
     const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -835,6 +889,7 @@ async function main() {
             }
         } else if (e.data.texdata) {
             const { texdata, texwidth, texheight } = e.data;
+            // console.log(texdata)
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texParameteri(
                 gl.TEXTURE_2D,
@@ -870,315 +925,453 @@ async function main() {
         }
     };
 
-    let activeKeys = new Set();
+    let activeKeys = [];
     let currentCameraIndex = 0;
 
-    // Mouse look controls
-    canvas.addEventListener("click", () => {
-        canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
-        canvas.requestPointerLock();
-    });
-
-    document.addEventListener("pointerlockchange", lockChange);
-    document.addEventListener("mozpointerlockchange", lockChange);
-
-    let lastMouseX = 0, lastMouseY = 0;
-
-    function lockChange() {
-        if (document.pointerLockElement === canvas) {
-            mouseLocked = true;
-            document.addEventListener("mousemove", onMouseMove);
-        } else {
-            mouseLocked = false;
-            document.removeEventListener("mousemove", onMouseMove);
-        }
-    }
-
-    function onMouseMove(e) {
-        if (!mouseLocked) return;
-        carousel = false;
-        const sensitivity = 0.002;
-        cameraRotation[0] += e.movementX * sensitivity;
-        cameraRotation[1] -= e.movementY * sensitivity;
-        cameraRotation[1] = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraRotation[1]));
-        viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
-    }
-
-    // ==================== MOBILE CONTROLS (Joystick + Look) ====================
-
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isMobile) {
-
-        let leftTouchId = null;
-        let rightTouchId = null;
-
-        let joystickStart = { x: 0, y: 0 };
-        let joystickDelta = { x: 0, y: 0 };
-
-        let lookPrev = { x: 0, y: 0 };
-
-        const maxJoystickRadius = 60;
-        const lookSensitivity = 0.004;
-        const moveSpeedMobile = 0.08;
-
-        function updateCameraView() {
-            viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
-        }
-
-        canvas.addEventListener('touchstart', (e) => {
-            for (const touch of e.changedTouches) {
-                const isLeftSide = touch.clientX < window.innerWidth / 2;
-
-                if (isLeftSide && leftTouchId === null) {
-                    leftTouchId = touch.identifier;
-                    joystickStart.x = touch.clientX;
-                    joystickStart.y = touch.clientY;
-                    joystickDelta.x = 0;
-                    joystickDelta.y = 0;
-                } else if (!isLeftSide && rightTouchId === null) {
-                    rightTouchId = touch.identifier;
-                    lookPrev.x = touch.clientX;
-                    lookPrev.y = touch.clientY;
-                }
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            for (const touch of e.touches) {
-
-                // LEFT SIDE = JOYSTICK
-                if (touch.identifier === leftTouchId) {
-                    let dx = touch.clientX - joystickStart.x;
-                    let dy = touch.clientY - joystickStart.y;
-
-                    const dist = Math.hypot(dx, dy);
-                    if (dist > maxJoystickRadius) {
-                        dx = (dx / dist) * maxJoystickRadius;
-                        dy = (dy / dist) * maxJoystickRadius;
-                    }
-
-                    joystickDelta.x = dx / maxJoystickRadius;
-                    joystickDelta.y = dy / maxJoystickRadius;
-                }
-
-                // RIGHT SIDE = LOOK
-                if (touch.identifier === rightTouchId) {
-                    const dx = touch.clientX - lookPrev.x;
-                    const dy = touch.clientY - lookPrev.y;
-
-                    cameraRotation[0] += dx * lookSensitivity;
-                    cameraRotation[1] -= dy * lookSensitivity;
-
-                    cameraRotation[1] = Math.max(
-                        -Math.PI / 2 + 0.01,
-                        Math.min(Math.PI / 2 - 0.01, cameraRotation[1])
-                    );
-
-                    lookPrev.x = touch.clientX;
-                    lookPrev.y = touch.clientY;
-
-                    updateCameraView();
-                }
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            for (const touch of e.changedTouches) {
-                if (touch.identifier === leftTouchId) {
-                    leftTouchId = null;
-                    joystickDelta.x = 0;
-                    joystickDelta.y = 0;
-                }
-                if (touch.identifier === rightTouchId) {
-                    rightTouchId = null;
-                }
-            }
-        });
-
-        canvas.addEventListener('touchcancel', () => {
-            leftTouchId = null;
-            rightTouchId = null;
-            joystickDelta.x = 0;
-            joystickDelta.y = 0;
-        });
-
-        // Inject movement into your existing frame loop
-        const originalFrame = frame;
-        frame = function(now) {
-
-            // --- JOYSTICK MOVEMENT ---
-            if (leftTouchId !== null) {
-                const yaw = cameraRotation[0];
-                const pitch = cameraRotation[1];
-
-                const cosYaw = Math.cos(yaw);
-                const sinYaw = Math.sin(yaw);
-                const cosPitch = Math.cos(pitch);
-                const sinPitch = Math.sin(pitch);
-
-                const forward = [-sinYaw * cosPitch, sinPitch, -cosYaw * cosPitch];
-                const right = [cosYaw, 0, -sinYaw];
-
-                cameraPosition[0] += (-forward[0] * joystickDelta.y + right[0] * joystickDelta.x) * moveSpeedMobile;
-                cameraPosition[1] += (-forward[1] * joystickDelta.y) * moveSpeedMobile;
-                cameraPosition[2] += (-forward[2] * joystickDelta.y + right[2] * joystickDelta.x) * moveSpeedMobile;
-
-                updateCameraView();
-            }
-
-            originalFrame(now);
-        };
-    }
-
-    // ==================== KEYBOARD & MOUSE (unchanged) ====================
-
     window.addEventListener("keydown", (e) => {
+        // if (document.activeElement != document.body) return;
         carousel = false;
-        activeKeys.add(e.code);
-        
+        if (!activeKeys.includes(e.code)) activeKeys.push(e.code);
         if (/\d/.test(e.key)) {
             currentCameraIndex = parseInt(e.key);
             camera = cameras[currentCameraIndex];
             viewMatrix = getViewMatrix(camera);
-            camid.innerText = "cam  " + currentCameraIndex;
-            return;
         }
         if (["-", "_"].includes(e.key)) {
-            currentCameraIndex = (currentCameraIndex + cameras.length - 1) % cameras.length;
+            currentCameraIndex =
+                (currentCameraIndex + cameras.length - 1) % cameras.length;
             viewMatrix = getViewMatrix(cameras[currentCameraIndex]);
-            camid.innerText = "cam  " + currentCameraIndex;
-            return;
         }
         if (["+", "="].includes(e.key)) {
             currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
             viewMatrix = getViewMatrix(cameras[currentCameraIndex]);
-            camid.innerText = "cam  " + currentCameraIndex;
-            return;
         }
-        let isSaving = false;
+        camid.innerText = "cam  " + currentCameraIndex;
         if (e.code == "KeyV") {
-            isSaving = true;
-            
-            const pos = cameraPosition.map(p => Math.round(p * 100) / 100);
-            
-            const yaw = cameraRotation[0];
-            const pitch = cameraRotation[1];
-            const roll = cameraRotation[2];
-            
-            const cy = Math.cos(yaw);
-            const sy = Math.sin(yaw);
-            const cp = Math.cos(pitch);
-            const sp = Math.sin(pitch);
-            const cr = Math.cos(roll);
-            const sr = Math.sin(roll);
-            
-            const forward = [-sy * cp, sp, -cy * cp];
-            const right = [cy, 0, -sy];
-            const up = [sy * sp, cp, cy * sp];
-            
-            const rotMatrix = [
-                right[0], up[0], -forward[0],
-                right[1], up[1], -forward[1],
-                right[2], up[2], -forward[2]
-            ];
-            
-            const rot = rotMatrix.map(r => Math.round(r * 100) / 100);
-            
-            const hashData = `[${pos[0]},${pos[1]},${pos[2]}][${rot.join(",")}]`;
-            location.hash = hashData;
-            camid.innerText = "saved!";
-            
-            setTimeout(() => {
-                if (camid.innerText === "saved!") camid.innerText = "";
-                isSaving = false;
-            }, 100);
+            location.hash =
+                "#" +
+                JSON.stringify(
+                    viewMatrix.map((k) => Math.round(k * 100) / 100),
+                );
+            camid.innerText = "";
+        } else if (e.code === "KeyP") {
+            carousel = true;
+            camid.innerText = "";
         }
     });
-
     window.addEventListener("keyup", (e) => {
-        activeKeys.delete(e.code);
+        activeKeys = activeKeys.filter((k) => k !== e.code);
     });
-
     window.addEventListener("blur", () => {
-        activeKeys.clear();
+        activeKeys = [];
     });
 
-    window.addEventListener("wheel", (e) => {
-        e.preventDefault();
-    }, { passive: false });
+    window.addEventListener(
+        "wheel",
+        (e) => {
+            carousel = false;
+            e.preventDefault();
+            const lineHeight = 10;
+            const scale =
+                e.deltaMode == 1
+                    ? lineHeight
+                    : e.deltaMode == 2
+                        ? innerHeight
+                        : 1;
+            let inv = invert4(viewMatrix);
+            if (e.shiftKey) {
+                inv = translate4(
+                    inv,
+                    (e.deltaX * scale) / innerWidth,
+                    (e.deltaY * scale) / innerHeight,
+                    0,
+                );
+            } else if (e.ctrlKey || e.metaKey) {
+                // inv = rotate4(inv,  (e.deltaX * scale) / innerWidth,  0, 0, 1);
+                // inv = translate4(inv,  0, (e.deltaY * scale) / innerHeight, 0);
+                // let preY = inv[13];
+                inv = translate4(
+                    inv,
+                    0,
+                    0,
+                    (-10 * (e.deltaY * scale)) / innerHeight,
+                );
+                // inv[13] = preY;
+            } else {
+                let d = 4;
+                inv = translate4(inv, 0, 0, d);
+                inv = rotate4(inv, -(e.deltaX * scale) / innerWidth, 0, 1, 0);
+                inv = rotate4(inv, (e.deltaY * scale) / innerHeight, 1, 0, 0);
+                inv = translate4(inv, 0, 0, -d);
+            }
 
+            viewMatrix = invert4(inv);
+        },
+        { passive: false },
+    );
+
+    let startX, startY, down;
+    canvas.addEventListener("mousedown", (e) => {
+        carousel = false;
+        e.preventDefault();
+        startX = e.clientX;
+        startY = e.clientY;
+        down = e.ctrlKey || e.metaKey ? 2 : 1;
+    });
+    canvas.addEventListener("contextmenu", (e) => {
+        carousel = false;
+        e.preventDefault();
+        startX = e.clientX;
+        startY = e.clientY;
+        down = 2;
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+        e.preventDefault();
+        if (down == 1) {
+            let inv = invert4(viewMatrix);
+            let dx = (5 * (e.clientX - startX)) / innerWidth;
+            let dy = (5 * (e.clientY - startY)) / innerHeight;
+            let d = 4;
+
+            inv = translate4(inv, 0, 0, d);
+            inv = rotate4(inv, dx, 0, 1, 0);
+            inv = rotate4(inv, -dy, 1, 0, 0);
+            inv = translate4(inv, 0, 0, -d);
+            // let postAngle = Math.atan2(inv[0], inv[10])
+            // inv = rotate4(inv, postAngle - preAngle, 0, 0, 1)
+            // console.log(postAngle)
+            viewMatrix = invert4(inv);
+
+            startX = e.clientX;
+            startY = e.clientY;
+        } else if (down == 2) {
+            let inv = invert4(viewMatrix);
+            // inv = rotateY(inv, );
+            // let preY = inv[13];
+            inv = translate4(
+                inv,
+                (-10 * (e.clientX - startX)) / innerWidth,
+                0,
+                (10 * (e.clientY - startY)) / innerHeight,
+            );
+            // inv[13] = preY;
+            viewMatrix = invert4(inv);
+
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+    });
+    canvas.addEventListener("mouseup", (e) => {
+        e.preventDefault();
+        down = false;
+        startX = 0;
+        startY = 0;
+    });
+
+    let altX = 0,
+        altY = 0;
+    canvas.addEventListener(
+        "touchstart",
+        (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                carousel = false;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                down = 1;
+            } else if (e.touches.length === 2) {
+                // console.log('beep')
+                carousel = false;
+                startX = e.touches[0].clientX;
+                altX = e.touches[1].clientX;
+                startY = e.touches[0].clientY;
+                altY = e.touches[1].clientY;
+                down = 1;
+            }
+        },
+        { passive: false },
+    );
+    canvas.addEventListener(
+        "touchmove",
+        (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && down) {
+                let inv = invert4(viewMatrix);
+                let dx = (4 * (e.touches[0].clientX - startX)) / innerWidth;
+                let dy = (4 * (e.touches[0].clientY - startY)) / innerHeight;
+
+                let d = 4;
+                inv = translate4(inv, 0, 0, d);
+                // inv = translate4(inv,  -x, -y, -z);
+                // inv = translate4(inv,  x, y, z);
+                inv = rotate4(inv, dx, 0, 1, 0);
+                inv = rotate4(inv, -dy, 1, 0, 0);
+                inv = translate4(inv, 0, 0, -d);
+
+                viewMatrix = invert4(inv);
+
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                // alert('beep')
+                const dtheta =
+                    Math.atan2(startY - altY, startX - altX) -
+                    Math.atan2(
+                        e.touches[0].clientY - e.touches[1].clientY,
+                        e.touches[0].clientX - e.touches[1].clientX,
+                    );
+                const dscale =
+                    Math.hypot(startX - altX, startY - altY) /
+                    Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY,
+                    );
+                const dx =
+                    (e.touches[0].clientX +
+                        e.touches[1].clientX -
+                        (startX + altX)) /
+                    2;
+                const dy =
+                    (e.touches[0].clientY +
+                        e.touches[1].clientY -
+                        (startY + altY)) /
+                    2;
+                let inv = invert4(viewMatrix);
+                // inv = translate4(inv,  0, 0, d);
+                inv = rotate4(inv, dtheta, 0, 0, 1);
+
+                inv = translate4(inv, -dx / innerWidth, -dy / innerHeight, 0);
+
+                // let preY = inv[13];
+                inv = translate4(inv, 0, 0, 3 * (1 - dscale));
+                // inv[13] = preY;
+
+                viewMatrix = invert4(inv);
+
+                startX = e.touches[0].clientX;
+                altX = e.touches[1].clientX;
+                startY = e.touches[0].clientY;
+                altY = e.touches[1].clientY;
+            }
+        },
+        { passive: false },
+    );
+    canvas.addEventListener(
+        "touchend",
+        (e) => {
+            e.preventDefault();
+            down = false;
+            startX = 0;
+            startY = 0;
+        },
+        { passive: false },
+    );
+
+    let jumpDelta = 0;
     let vertexCount = 0;
+
     let lastFrame = 0;
     let avgFps = 0;
+    let start = 0;
 
-    const moveSpeed = 0.1;
+    window.addEventListener("gamepadconnected", (e) => {
+        const gp = navigator.getGamepads()[e.gamepad.index];
+        console.log(
+            `Gamepad connected at index ${gp.index}: ${gp.id}. It has ${gp.buttons.length} buttons and ${gp.axes.length} axes.`,
+        );
+    });
+    window.addEventListener("gamepaddisconnected", (e) => {
+        console.log("Gamepad disconnected");
+    });
+
+    let leftGamepadTrigger, rightGamepadTrigger;
 
     const frame = (now) => {
-        // Keyboard movement
-        const yaw = cameraRotation[0];
-        const pitch = cameraRotation[1];
-        const cosYaw = Math.cos(yaw);
-        const sinYaw = Math.sin(yaw);
-        const cosPitch = Math.cos(pitch);
-        const sinPitch = Math.sin(pitch);
-        
-        const forwardX = -sinYaw * cosPitch;
-        const forwardZ = -cosYaw * cosPitch;
-        const forwardY = sinPitch;
-        
-        const rightX = cosYaw;
-        const rightZ = -sinYaw;
-        
-        const moveDelta = { x: 0, z: 0, y: 0 };
-        const currentSpeed = moveSpeed * (activeKeys.has("ShiftLeft") ? 2 : 1);
-        
-        if (activeKeys.has("KeyW")) {
-            moveDelta.x -= forwardX * currentSpeed;
-            moveDelta.z -= forwardZ * currentSpeed;
-            moveDelta.y -= forwardY * currentSpeed;
+        let inv = invert4(viewMatrix);
+        let shiftKey =
+            activeKeys.includes("Shift") ||
+            activeKeys.includes("ShiftLeft") ||
+            activeKeys.includes("ShiftRight");
+
+        if (activeKeys.includes("ArrowUp")) {
+            if (shiftKey) {
+                inv = translate4(inv, 0, -0.03, 0);
+            } else {
+                inv = translate4(inv, 0, 0, 0.1);
+            }
         }
-        if (activeKeys.has("KeyS")) {
-            moveDelta.x += forwardX * currentSpeed;
-            moveDelta.z += forwardZ * currentSpeed;
-            moveDelta.y += forwardY * currentSpeed;
+        if (activeKeys.includes("ArrowDown")) {
+            if (shiftKey) {
+                inv = translate4(inv, 0, 0.03, 0);
+            } else {
+                inv = translate4(inv, 0, 0, -0.1);
+            }
         }
-        if (activeKeys.has("KeyA")) {
-            moveDelta.x -= rightX * currentSpeed;
-            moveDelta.z -= rightZ * currentSpeed;
+        if (activeKeys.includes("ArrowLeft"))
+            inv = translate4(inv, -0.03, 0, 0);
+        //
+        if (activeKeys.includes("ArrowRight"))
+            inv = translate4(inv, 0.03, 0, 0);
+        // inv = rotate4(inv, 0.01, 0, 1, 0);
+        if (activeKeys.includes("KeyA")) inv = rotate4(inv, -0.01, 0, 1, 0);
+        if (activeKeys.includes("KeyD")) inv = rotate4(inv, 0.01, 0, 1, 0);
+        if (activeKeys.includes("KeyQ")) inv = rotate4(inv, 0.01, 0, 0, 1);
+        if (activeKeys.includes("KeyE")) inv = rotate4(inv, -0.01, 0, 0, 1);
+        if (activeKeys.includes("KeyW")) inv = rotate4(inv, 0.005, 1, 0, 0);
+        if (activeKeys.includes("KeyS")) inv = rotate4(inv, -0.005, 1, 0, 0);
+
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        let isJumping = activeKeys.includes("Space");
+        for (let gamepad of gamepads) {
+            if (!gamepad) continue;
+
+            const axisThreshold = 0.1; // Threshold to detect when the axis is intentionally moved
+            const moveSpeed = 0.06;
+            const rotateSpeed = 0.02;
+
+            // Assuming the left stick controls translation (axes 0 and 1)
+            if (Math.abs(gamepad.axes[0]) > axisThreshold) {
+                inv = translate4(inv, moveSpeed * gamepad.axes[0], 0, 0);
+                carousel = false;
+            }
+            if (Math.abs(gamepad.axes[1]) > axisThreshold) {
+                inv = translate4(inv, 0, 0, -moveSpeed * gamepad.axes[1]);
+                carousel = false;
+            }
+            if (gamepad.buttons[12].pressed || gamepad.buttons[13].pressed) {
+                inv = translate4(
+                    inv,
+                    0,
+                    -moveSpeed *
+                    (gamepad.buttons[12].pressed -
+                        gamepad.buttons[13].pressed),
+                    0,
+                );
+                carousel = false;
+            }
+
+            if (gamepad.buttons[14].pressed || gamepad.buttons[15].pressed) {
+                inv = translate4(
+                    inv,
+                    -moveSpeed *
+                    (gamepad.buttons[14].pressed -
+                        gamepad.buttons[15].pressed),
+                    0,
+                    0,
+                );
+                carousel = false;
+            }
+
+            // Assuming the right stick controls rotation (axes 2 and 3)
+            if (Math.abs(gamepad.axes[2]) > axisThreshold) {
+                inv = rotate4(inv, rotateSpeed * gamepad.axes[2], 0, 1, 0);
+                carousel = false;
+            }
+            if (Math.abs(gamepad.axes[3]) > axisThreshold) {
+                inv = rotate4(inv, -rotateSpeed * gamepad.axes[3], 1, 0, 0);
+                carousel = false;
+            }
+
+            let tiltAxis = gamepad.buttons[6].value - gamepad.buttons[7].value;
+            if (Math.abs(tiltAxis) > axisThreshold) {
+                inv = rotate4(inv, rotateSpeed * tiltAxis, 0, 0, 1);
+                carousel = false;
+            }
+            if (gamepad.buttons[4].pressed && !leftGamepadTrigger) {
+                camera =
+                    cameras[(cameras.indexOf(camera) + 1) % cameras.length];
+                inv = invert4(getViewMatrix(camera));
+                carousel = false;
+            }
+            if (gamepad.buttons[5].pressed && !rightGamepadTrigger) {
+                camera =
+                    cameras[
+                    (cameras.indexOf(camera) + cameras.length - 1) %
+                    cameras.length
+                    ];
+                inv = invert4(getViewMatrix(camera));
+                carousel = false;
+            }
+            leftGamepadTrigger = gamepad.buttons[4].pressed;
+            rightGamepadTrigger = gamepad.buttons[5].pressed;
+            if (gamepad.buttons[0].pressed) {
+                isJumping = true;
+                carousel = false;
+            }
+            if (gamepad.buttons[3].pressed) {
+                carousel = true;
+            }
         }
-        if (activeKeys.has("KeyD")) {
-            moveDelta.x += rightX * currentSpeed;
-            moveDelta.z += rightZ * currentSpeed;
+
+        if (
+            ["KeyJ", "KeyK", "KeyL", "KeyI"].some((k) => activeKeys.includes(k))
+        ) {
+            let d = 4;
+            inv = translate4(inv, 0, 0, d);
+            inv = rotate4(
+                inv,
+                activeKeys.includes("KeyJ")
+                    ? -0.05
+                    : activeKeys.includes("KeyL")
+                        ? 0.05
+                        : 0,
+                0,
+                1,
+                0,
+            );
+            inv = rotate4(
+                inv,
+                activeKeys.includes("KeyI")
+                    ? 0.05
+                    : activeKeys.includes("KeyK")
+                        ? -0.05
+                        : 0,
+                1,
+                0,
+                0,
+            );
+            inv = translate4(inv, 0, 0, -d);
         }
-        if (activeKeys.has("Space")) {
-            moveDelta.y -= currentSpeed;
+
+        viewMatrix = invert4(inv);
+
+        if (carousel) {
+            let inv = invert4(defaultViewMatrix);
+
+            const t = Math.sin((Date.now() - start) / 5000);
+            inv = translate4(inv, 2.5 * t, 0, 6 * (1 - Math.cos(t)));
+            inv = rotate4(inv, -0.6 * t, 0, 1, 0);
+
+            viewMatrix = invert4(inv);
         }
-        if (activeKeys.has("ControlLeft")) {
-            moveDelta.y += currentSpeed;
+
+        if (isJumping) {
+            jumpDelta = Math.min(1, jumpDelta + 0.05);
+        } else {
+            jumpDelta = Math.max(0, jumpDelta - 0.05);
         }
-        
-        if (moveDelta.x !== 0 || moveDelta.z !== 0 || moveDelta.y !== 0) {
-            cameraPosition[0] += moveDelta.x;
-            cameraPosition[1] += moveDelta.y;
-            cameraPosition[2] += moveDelta.z;
-            viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
-        }
-        
-        const viewProj = multiply4(projectionMatrix, viewMatrix);
+
+        let inv2 = invert4(viewMatrix);
+        inv2 = translate4(inv2, 0, -jumpDelta, 0);
+        inv2 = rotate4(inv2, -0.1 * jumpDelta, 1, 0, 0);
+        let actualViewMatrix = invert4(inv2);
+
+        const viewProj = multiply4(projectionMatrix, actualViewMatrix);
         worker.postMessage({ view: viewProj });
-        
+
         const currentFps = 1000 / (now - lastFrame) || 0;
         avgFps = avgFps * 0.9 + currentFps * 0.1;
-        
+
         if (vertexCount > 0) {
             document.getElementById("spinner").style.display = "none";
-            gl.uniformMatrix4fv(u_view, false, viewMatrix);
+            gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             document.getElementById("spinner").style.display = "";
+            start = Date.now() + 2000;
         }
         const progress = (100 * vertexCount) / (splatData.length / rowLength);
         if (progress < 100) {
@@ -1215,6 +1408,7 @@ async function main() {
                     canvas.height,
                 );
                 gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
+
                 console.log("Loaded Cameras");
             };
             fr.readAsText(file);
@@ -1225,6 +1419,7 @@ async function main() {
                 console.log("Loaded", Math.floor(splatData.length / rowLength));
 
                 if (isPly(splatData)) {
+                    // ply file magic header means it should be handled differently
                     worker.postMessage({ ply: splatData.buffer, save: true });
                 } else {
                     worker.postMessage({
@@ -1238,46 +1433,10 @@ async function main() {
     };
 
     window.addEventListener("hashchange", (e) => {
-        if (isSaving) return;
-        
         try {
-            const hash = location.hash.slice(1);
-            if (!hash) return;
-            
-            const match = hash.match(/\[([-\d.]+),([-\d.]+),([-\d.]+)\]\[([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\]/);
-            
-            if (match) {
-                cameraPosition = [
-                    parseFloat(match[1]),
-                    parseFloat(match[2]),
-                    parseFloat(match[3])
-                ];
-                
-                const rotMatrix = [
-                    parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6]),
-                    parseFloat(match[7]), parseFloat(match[8]), parseFloat(match[9]),
-                    parseFloat(match[10]), parseFloat(match[11]), parseFloat(match[12])
-                ];
-                
-                const R = rotMatrix;
-                const t = cameraPosition;
-                viewMatrix = [
-                    R[0], R[1], R[2], 0,
-                    R[3], R[4], R[5], 0,
-                    R[6], R[7], R[8], 0,
-                    -t[0] * R[0] - t[1] * R[3] - t[2] * R[6],
-                    -t[0] * R[1] - t[1] * R[4] - t[2] * R[7],
-                    -t[0] * R[2] - t[1] * R[5] - t[2] * R[8],
-                    1
-                ];
-                
-                cameraRotation[0] = Math.atan2(R[4], R[0]);
-                cameraRotation[1] = Math.asin(-R[2]);
-                cameraRotation[2] = 0;
-            }
-        } catch (err) { 
-            console.error("Failed to parse hash:", err);
-        }
+            viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+            carousel = false;
+        } catch (err) { }
     });
 
     const preventDefault = (e) => {
@@ -1316,6 +1475,7 @@ async function main() {
     }
     if (!stopLoading) {
         if (isPly(splatData)) {
+            // ply file magic header means it should be handled differently
             worker.postMessage({ ply: splatData.buffer, save: false });
         } else {
             worker.postMessage({
