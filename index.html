@@ -6,6 +6,7 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<style>
 		*, *::before, *::after { box-sizing: border-box; }
@@ -92,8 +93,8 @@
 			text-align: center;
 		}
 
-		/* ── Sidebar toggle button ── */
-		#sidebar-toggle {
+		/* ── Splat browser button ── */
+		#splat-browser-btn {
 			position: relative;
 			z-index: 510;
 			width: 36px; height: 36px;
@@ -106,91 +107,199 @@
 			pointer-events: all;
 			transition: background 0.2s;
 		}
-		#sidebar-toggle:hover { background: rgba(40,40,60,0.85); }
-		#sidebar-toggle svg { width: 18px; height: 18px; fill: none; stroke: #ccc; stroke-width: 2; }
+		#splat-browser-btn:hover { background: rgba(40,40,60,0.85); }
+		#splat-browser-btn svg { width: 18px; height: 18px; fill: none; stroke: #ccc; stroke-width: 2; }
 
-		/* ── Splat sidebar ── */
-		#splat-sidebar {
-		   position: absolute;
-		   top: 0; left: 0;
-		   width: 220px; height: 100%;
-		   z-index: 2;
-		   background: rgba(10,10,18,0.88);
-		   backdrop-filter: blur(12px);
-		   border-right: 1px solid rgba(255,255,255,0.08);
-		   display: flex; flex-direction: column;
-		   transform: translateX(-100%);
-		   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-		   pointer-events: all;
-		}
-		#splat-sidebar.open { transform: translateX(0); }
-
-		#sidebar-header {
-			padding: 52px 14px 10px;
-			font-size: 11px;
-			font-weight: 700;
-			letter-spacing: 0.1em;
-			text-transform: uppercase;
-			color: rgba(255,255,255,0.4);
-			border-bottom: 1px solid rgba(255,255,255,0.07);
-		}
-
-		#splat-list {
-			flex: 1;
-			overflow-y: auto;
-			padding: 8px;
+		/* ── Full-page splat browser overlay ── */
+		#splat-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 500;
+			background: rgba(6,6,14,0.97);
+			backdrop-filter: blur(20px);
 			display: flex;
 			flex-direction: column;
-			gap: 6px;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.22s ease;
 		}
-		#splat-list::-webkit-scrollbar { width: 4px; }
-		#splat-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+		#splat-overlay.open {
+			opacity: 1;
+			pointer-events: all;
+		}
 
-		.splat-item {
-			display: flex; align-items: center; gap: 10px;
-			padding: 8px 10px;
-			border-radius: 8px;
-			cursor: pointer;
-			border: 1px solid transparent;
-			transition: background 0.15s, border-color 0.15s;
-		}
-		.splat-item:hover { background: rgba(255,255,255,0.07); }
-		.splat-item.active {
-			background: rgba(99,102,241,0.2);
-			border-color: rgba(99,102,241,0.5);
-		}
-		.splat-thumb {
-			width: 40px; height: 40px;
-			border-radius: 6px;
-			background: linear-gradient(135deg, #1e1e3a 0%, #2a2a50 100%);
-			display: flex; align-items: center; justify-content: center;
-			font-size: 18px;
+		#overlay-header {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			padding: 16px 24px 12px;
+			border-bottom: 1px solid rgba(255,255,255,0.07);
 			flex-shrink: 0;
+		}
+		#overlay-close {
+			width: 34px; height: 34px;
+			border-radius: 8px;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(255,255,255,0.07);
+			color: rgba(255,255,255,0.75);
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 15px;
+			transition: background 0.15s;
+			flex-shrink: 0;
+		}
+		#overlay-close:hover { background: rgba(255,255,255,0.16); }
+		#overlay-title {
+			font-size: 16px;
+			font-weight: 700;
+			color: rgba(255,255,255,0.9);
+			letter-spacing: 0.03em;
+		}
+		#overlay-count {
+			font-size: 12px;
+			color: rgba(255,255,255,0.3);
+			margin-left: 2px;
+		}
+
+		#overlay-filters {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 10px 24px;
+			flex-wrap: wrap;
+			flex-shrink: 0;
+			border-bottom: 1px solid rgba(255,255,255,0.05);
+		}
+		.filter-chip {
+			padding: 5px 14px;
+			border-radius: 20px;
+			border: 1px solid rgba(255,255,255,0.14);
+			background: rgba(255,255,255,0.05);
+			color: rgba(255,255,255,0.55);
+			font-size: 12px;
+			cursor: pointer;
+			transition: background 0.15s, border-color 0.15s, color 0.15s;
+			white-space: nowrap;
+			user-select: none;
+		}
+		.filter-chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
+		.filter-chip.active {
+			background: rgba(99,102,241,0.22);
+			border-color: rgba(99,102,241,0.65);
+			color: #a5b4fc;
+		}
+		#year-filter {
+			padding: 5px 10px;
+			border-radius: 20px;
+			border: 1px solid rgba(255,255,255,0.14);
+			background: rgba(255,255,255,0.05);
+			color: rgba(255,255,255,0.55);
+			font-size: 12px;
+			cursor: pointer;
+			outline: none;
+			margin-left: auto;
+		}
+		#year-filter option { background: #1a1a2e; color: #fff; }
+
+		#splat-grid {
+			flex: 1;
+			overflow-y: auto;
+			padding: 20px 24px;
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+			gap: 14px;
+			align-content: start;
+		}
+		#splat-grid::-webkit-scrollbar { width: 6px; }
+		#splat-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 3px; }
+
+		.splat-card {
+			border-radius: 12px;
+			overflow: hidden;
+			cursor: pointer;
+			border: 1.5px solid rgba(255,255,255,0.07);
+			background: rgba(255,255,255,0.04);
+			transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+			position: relative;
+		}
+		.splat-card:hover {
+			border-color: rgba(255,255,255,0.2);
+			transform: translateY(-2px);
+			box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+		}
+		.splat-card.active {
+			border-color: rgba(99,102,241,0.7);
+			box-shadow: 0 0 0 2px rgba(99,102,241,0.22), 0 8px 24px rgba(0,0,0,0.45);
+		}
+		.splat-card-thumb {
+			width: 100%;
+			aspect-ratio: 16 / 10;
+			background: linear-gradient(135deg, #1e1e3a 0%, #2a2a50 100%);
 			overflow: hidden;
 		}
-		.splat-thumb-img {
-			width: 100%;
-			height: 100%;
+		.splat-card-thumb img {
+			width: 100%; height: 100%;
 			object-fit: cover;
 			display: block;
+			transition: transform 0.3s;
 		}
-		.splat-thumb-emoji {
-			font-size: 18px;
-			line-height: 1;
+		.splat-card:hover .splat-card-thumb img { transform: scale(1.05); }
+		.splat-card-thumb-emoji {
+			display: flex; align-items: center; justify-content: center;
+			font-size: 32px;
+			width: 100%; height: 100%;
 		}
-		.splat-info { min-width: 0; }
-		.splat-name {
-			font-size: 12px;
+		.splat-card-body { padding: 10px 12px 12px; }
+		.splat-card-name {
+			font-size: 13px;
 			font-weight: 600;
+			color: rgba(255,255,255,0.88);
+			margin-bottom: 5px;
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
-			color: rgba(255,255,255,0.88);
 		}
-		.splat-desc {
+		.splat-card-meta {
+			display: flex;
+			align-items: center;
+			gap: 5px;
+			flex-wrap: wrap;
+		}
+		.splat-tag {
 			font-size: 10px;
-			color: rgba(255,255,255,0.35);
-			margin-top: 2px;
+			padding: 2px 7px;
+			border-radius: 10px;
+			background: rgba(99,102,241,0.16);
+			color: #a5b4fc;
+			border: 1px solid rgba(99,102,241,0.28);
+			white-space: nowrap;
+		}
+		.splat-year {
+			font-size: 10px;
+			padding: 2px 7px;
+			border-radius: 10px;
+			background: rgba(255,255,255,0.07);
+			color: rgba(255,255,255,0.4);
+			border: 1px solid rgba(255,255,255,0.1);
+			margin-left: auto;
+		}
+		.splat-card-active-badge {
+			position: absolute;
+			top: 8px; right: 8px;
+			background: rgba(99,102,241,0.88);
+			color: #fff;
+			font-size: 10px;
+			font-weight: 700;
+			padding: 2px 8px;
+			border-radius: 10px;
+			letter-spacing: 0.04em;
+		}
+		#overlay-empty {
+			grid-column: 1 / -1;
+			text-align: center;
+			padding: 60px 0;
+			color: rgba(255,255,255,0.25);
+			font-size: 14px;
 		}
 
 		/* ── Help panel (bottom-left) ── */
@@ -366,8 +475,8 @@
 	<!-- Top HUD -->
 	<div id="hud-top">
 		<div id="hud-left">
-			<button id="sidebar-toggle" title="Splat library">
-				<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2" rx="1"/><rect x="3" y="11" width="18" height="2" rx="1"/><rect x="3" y="17" width="18" height="2" rx="1"/></svg>
+			<button id="splat-browser-btn" title="Browse scenes">
+				<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
 			</button>
 			<span id="app-title" class="nohf">Splat Viewer</span>
 		</div>
@@ -377,10 +486,17 @@
 		</div>
 	</div>
 
-	<!-- Splat sidebar -->
-	<div id="splat-sidebar">
-		<div id="sidebar-header">Scenes</div>
-		<div id="splat-list">
+	<!-- Full-page splat browser overlay -->
+	<div id="splat-overlay">
+		<div id="overlay-header">
+			<button id="overlay-close" title="Close">✕</button>
+			<span id="overlay-title">Gaussian Splats [Scenes]</span>
+			<span id="overlay-count"></span>
+		</div>
+		<div id="overlay-filters">
+			<!-- populated by JS -->
+		</div>
+		<div id="splat-grid">
 			<!-- populated by JS -->
 		</div>
 	</div>
