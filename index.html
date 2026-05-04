@@ -8,7 +8,14 @@
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<style>
+		/* Highlight for active splat marker on map */
+		.splat-marker.active .splat-marker-thumb {
+			box-shadow: 0 0 0 4px #22c55e, 0 2px 12px rgba(0,0,0,0.6);
+			border-color: #22c55e;
+		}
 		*, *::before, *::after { box-sizing: border-box; }
 
 
@@ -162,6 +169,112 @@
 			font-size: 12px;
 			color: rgba(255,255,255,0.3);
 			margin-left: 2px;
+		}
+
+		/* ── Map button in overlay header ── */
+		#overlay-map-btn {
+			margin-left: auto;
+			width: 34px; height: 34px;
+			border-radius: 8px;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(255,255,255,0.07);
+			color: rgba(255,255,255,0.75);
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 16px;
+			transition: background 0.15s;
+			flex-shrink: 0;
+		}
+		#overlay-map-btn:hover { background: rgba(255,255,255,0.16); }
+
+		/* ── Map overlay ── */
+		#map-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 600;
+			background: rgba(6,6,14,0.98);
+			display: flex;
+			flex-direction: column;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.22s ease;
+			height: 100svh;
+			width: 100vw;
+			overflow: hidden;
+		}
+		#map-overlay.open {
+			opacity: 1;
+			pointer-events: all;
+		}
+		#map-header {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			padding: 16px 24px 12px;
+			border-bottom: 1px solid rgba(255,255,255,0.07);
+			flex-shrink: 0;
+		}
+		#map-close {
+			width: 34px; height: 34px;
+			border-radius: 8px;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(255,255,255,0.07);
+			color: rgba(255,255,255,0.75);
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 15px;
+			transition: background 0.15s;
+			flex-shrink: 0;
+		}
+		#map-close:hover { background: rgba(255,255,255,0.16); }
+		#map-title {
+			font-size: 16px;
+			font-weight: 700;
+			color: rgba(255,255,255,0.9);
+			letter-spacing: 0.03em;
+		}
+		#leaflet-map {
+			flex: 1 1 0;
+			min-height: 0;
+			width: 100%;
+		}
+		/* Custom splat waypoint marker */
+		.splat-marker {
+			width: 72px;
+			cursor: pointer;
+			text-align: center;
+		}
+		.splat-marker-thumb {
+			width: 64px; height: 40px;
+			border-radius: 8px;
+			overflow: hidden;
+			border: 2px solid rgba(99,102,241,0.8);
+			box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+			background: #1e1e3a;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 22px;
+			margin: 0 auto;
+		}
+		.splat-marker-thumb img {
+			width: 100%; height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+		.splat-marker-label {
+			margin-top: 3px;
+			font-size: 10px;
+			font-weight: 600;
+			color: #fff;
+			text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			max-width: 72px;
+		}
+		.splat-marker-pin {
+			width: 2px; height: 8px;
+			background: rgba(99,102,241,0.8);
+			margin: 0 auto;
 		}
 
 		   #overlay-filters {
@@ -499,6 +612,7 @@
 			<button id="overlay-close" title="Close">✕</button>
 			<span id="overlay-title">Gaussian Splats [Scenes]</span>
 			<span id="overlay-count"></span>
+			<button id="overlay-map-btn" title="World map">🗺️</button>
 		</div>
 		<div id="overlay-filters">
 			<!-- populated by JS -->
@@ -506,6 +620,15 @@
 		<div id="splat-grid">
 			<!-- populated by JS -->
 		</div>
+	</div>
+
+	<!-- Map overlay -->
+	<div id="map-overlay">
+		<div id="map-header">
+			<button id="map-close" title="Close map">✕</button>
+			<span id="map-title">Scene Locations</span>
+		</div>
+		<div id="leaflet-map"></div>
 	</div>
 
 	<!-- Progress bar -->
@@ -554,6 +677,96 @@
 	</div>
 
 	<script src="main.js"></script>
+	<script>
+		// ── Map overlay logic ──
+		const mapOverlayEl = document.getElementById('map-overlay');
+		const mapOpenBtn = document.getElementById('overlay-map-btn');
+		const mapCloseBtn = document.getElementById('map-close');
+		let leafletMap = null;
+		let mapMarkers = [];
+
+
+		function openMap() {
+			mapOverlayEl.classList.add('open');
+			// Init map lazily
+			if (!leafletMap) {
+				leafletMap = L.map('leaflet-map', { zoomControl: true }).setView([55.6, 12.34], 11);
+				L.tileLayer(
+				'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+				{
+					maxZoom: 19,
+					attribution: '&copy; Esri & contributors'
+				}
+				).addTo(leafletMap);
+			} else {
+				// Remove old markers
+				mapMarkers.forEach(m => leafletMap.removeLayer(m));
+				mapMarkers = [];
+				setTimeout(() => leafletMap.invalidateSize(), 50);
+			}
+			// Always (re)populate markers from splatLibrary
+			if (typeof splatLibrary !== 'undefined') {
+				let activeMarker = null;
+				splatLibrary.forEach((splat, idx) => {
+					if (splat.lat == null || splat.lng == null) return;
+					const isActive = (typeof activeSplatIndex !== 'undefined' && idx === activeSplatIndex);
+					const thumbHtml = splat.image
+						? `<div class="splat-marker-thumb"><img src="${splat.image}" alt=""></div>`
+						: `<div class="splat-marker-thumb">${splat.emoji || '📍'}</div>`;
+					const markerHtml = `<div class="splat-marker${isActive ? ' active' : ''}">${thumbHtml}<div class="splat-marker-pin"></div><div class="splat-marker-label">${splat.name}</div></div>`;
+					const icon = L.divIcon({
+						html: markerHtml,
+						className: '',
+						iconSize: [72, 68],
+						iconAnchor: [36, 48],
+						popupAnchor: [0, -50],
+					});
+					const marker = L.marker([splat.lat, splat.lng], { icon }).addTo(leafletMap);
+					mapMarkers.push(marker);
+					if (isActive) activeMarker = marker;
+					const popupThumb = splat.image
+						? `<img src="${splat.image}" style="width:160px;height:100px;object-fit:cover;border-radius:6px;display:block;margin-bottom:6px;">`
+						: `<div style="font-size:36px;text-align:center;margin-bottom:6px;">${splat.emoji || '📍'}</div>`;
+					// Add a button to activate the splat
+					const popupHtml = `
+						<div style="font-family:'Segoe UI',sans-serif;min-width:160px;">
+							${popupThumb}
+							<b style="font-size:13px;">${splat.name}</b><br>
+							<span style="font-size:11px;color:#666;">${splat.desc || ''}</span><br>
+							<button onclick="activateSplatFromMap(${idx})" style="margin-top:8px;margin-right:6px;padding:4px 14px;border-radius:7px;border:none;background:#6366f1;color:#fff;font-weight:600;cursor:pointer;">Goto</button>
+							<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(splat.lat)},${encodeURIComponent(splat.lng)}" target="_blank" rel="noopener" style="margin-top:8px;padding:4px 14px;border-radius:7px;border:none;background:#22c55e;color:#fff;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;">Google Maps</a>
+						</div>
+					`;
+					marker.bindPopup(popupHtml);
+				});
+				// Open popup for active marker if present
+				if (activeMarker) setTimeout(() => activeMarker.openPopup(), 150);
+			}
+			setTimeout(() => leafletMap.invalidateSize(), 80);
+		}
+
+		function closeMap() {
+			mapOverlayEl.classList.remove('open');
+		}
+
+		mapOpenBtn.addEventListener('click', openMap);
+		mapCloseBtn.addEventListener('click', closeMap);
+		// Close on Escape
+		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMap(); });
+		// Expose function globally
+		window.activateSplatFromMap = function(idx) {
+			if (typeof splatLibrary !== 'undefined' && splatLibrary[idx]) {
+				activeSplatIndex = idx;
+				localStorage.setItem("activeSplatIndex", idx);
+				// Close map overlay
+				closeMap();
+				// Properly close splat-overlay and reset overlayOpen so mouse capture works
+				if (typeof window.closeOverlay === 'function') window.closeOverlay();
+				// Load the splat
+				if (typeof window.loadSplat === 'function') window.loadSplat(splatLibrary[idx]);
+			}
+		}
+	</script>
 </body>
 
 </html>
