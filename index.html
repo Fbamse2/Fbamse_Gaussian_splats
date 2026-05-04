@@ -123,9 +123,8 @@
 			   pointer-events: none;
 			   transition: opacity 0.22s ease;
 			   height: 100svh;
-			   max-height: 100svh;
 			   width: 100vw;
-			   min-height: 0;
+			   overflow: hidden;
 		   }
 		   #splat-overlay.open {
 			   opacity: 1;
@@ -205,29 +204,31 @@
 		#year-filter option { background: #1a1a2e; color: #fff; }
 
 		   #splat-grid {
-			   flex: 1 1 0%;
+			   flex: 1 1 0;
 			   min-height: 0;
-			   max-height: 100svh;
 			   overflow-y: auto;
+			   overflow-x: hidden;
 			   padding: 20px 24px;
 			   display: grid;
-			   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+			   grid-template-columns: repeat(auto-fill, 280px);
+			   grid-auto-rows: min-content;
 			   gap: 14px;
 			   align-content: start;
+			   justify-content: center;
 			   -webkit-overflow-scrolling: touch;
 		   }
-		   #splat-grid::-webkit-scrollbar { width: 6px; }
-		   #splat-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 3px; }
+		#splat-grid::-webkit-scrollbar { width: 6px; }
+		#splat-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 3px; }
 
-		.splat-card {
-			border-radius: 12px;
-			overflow: hidden;
-			cursor: pointer;
-			border: 1.5px solid rgba(255,255,255,0.07);
-			background: rgba(255,255,255,0.04);
-			transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
-			position: relative;
-		}
+		   .splat-card {
+			   border-radius: 12px;
+			   overflow: hidden;
+			   cursor: pointer;
+			   border: 1.5px solid rgba(255,255,255,0.07);
+			   background: rgba(255,255,255,0.04);
+			   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+			   position: relative;
+		   }
 		.splat-card:hover {
 			border-color: rgba(255,255,255,0.2);
 			transform: translateY(-2px);
