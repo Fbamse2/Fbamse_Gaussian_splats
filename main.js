@@ -1,5 +1,5 @@
 // ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = true; // Disable to prevent saving camera state to localStorage
+const ENABLE_SAVE_VIEW = false; // Disable to prevent saving camera state to localStorage
 
 
 // Global vertexCount for all code paths

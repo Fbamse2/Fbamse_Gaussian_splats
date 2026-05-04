@@ -7,7 +7,8 @@
             "2026",
             "Havn",
             "Greve",
-            "Winter"
+            "Winter",
+            "VCT Drone Tur"
         ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.png",
         "url": "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
@@ -34,7 +35,8 @@
             "2026",
             "Havn",
             "Brøndby",
-            "Winter"
+            "Winter",
+            "VCT Drone Tur"
         ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.png",
         "url": "brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.splat",
@@ -61,7 +63,8 @@
             "2026",
             "Bjerg",
             "Brøndby",
-            "Winter"
+            "Winter",
+            "VCT Drone Tur"
         ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/Brøndby_Bjerg_Splat_d5f92d69-1764-4649-b641-c8b0053365cb.png",
         "url": "Brøndby_Bjerg_Splat_d5f92d69-1764-4649-b641-c8b0053365cb.splat",
@@ -87,23 +90,48 @@
         "tags": [
             "2026",
             "Bjerg",
-            "Albertslund"
+            "Albertslund",
+            "VCT Drone Tur"
         ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/Albertslund_Bjerg_Splat_7f8114da-f7fd-4f63-b430-55abc7a67304.png",
         "url": "Albertslund_Bjerg_Splat_7f8114da-f7fd-4f63-b430-55abc7a67304.splat",
         "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
         "cameraPosition": [
-            17.04,
-            -29.15,
-            63.41
+            -16.1,
+            -19.38,
+            32.25
         ],
         "cameraRotation": [
-            -2.8,
-            -0.45,
+            -3.83,
+            -0.49,
             0
         ],
         "lat": 55.68893348356224,
         "lng": 12.363380347560003,
         "vertexCount": 2723614
+    },
+    {
+        "name": "Hvidovre Blomst",
+        "desc": "2026, Denmark",
+        "emoji": "🌸",
+        "tags": [
+            "2026",
+            "Blomst",
+            "Hvidovre"
+        ],
+        "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/Hvidovre_Blomst_Splat_87020dc7-fb24-4ecf-a118-be30b72cbb78.png",
+        "url": "Hvidovre_Blomst_Splat_87020dc7-fb24-4ecf-a118-be30b72cbb78.splat",
+        "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
+        "cameraPosition": [
+            4.13,
+            -5.74,
+            2.7
+        ],
+        "cameraRotation": [
+            -2.15,
+            -0.66,
+            0
+        ],
+        "vertexCount": 1858649
     }
 ]
