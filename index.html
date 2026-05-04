@@ -42,16 +42,30 @@
 			pointer-events: none;
 		}
 
+		#hud-left {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			min-width: 0;
+		}
+
+		#hud-right {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			margin-left: auto;
+		}
+
 		#app-title {
 			font-size: 13px;
 			font-weight: 600;
 			letter-spacing: 0.06em;
 			color: rgba(255,255,255,0.85);
 			text-transform: uppercase;
+			white-space: nowrap;
 		}
 
 		#fps {
-			margin-left: auto;
 			font-size: 12px;
 			font-variant-numeric: tabular-nums;
 			color: rgba(255,255,255,0.55);
@@ -72,9 +86,8 @@
 
 		/* ── Sidebar toggle button ── */
 		#sidebar-toggle {
-			position: absolute;
-			top: 10px; right: 10px;
-			z-index: 300;
+			position: relative;
+			z-index: 510;
 			width: 36px; height: 36px;
 			border-radius: 10px;
 			border: 1px solid rgba(255,255,255,0.15);
@@ -90,17 +103,17 @@
 
 		/* ── Splat sidebar ── */
 		#splat-sidebar {
-			position: absolute;
-			top: 0; right: 0;
-			width: 220px; height: 100%;
-			z-index: 250;
-			background: rgba(10,10,18,0.88);
-			backdrop-filter: blur(12px);
-			border-left: 1px solid rgba(255,255,255,0.08);
-			display: flex; flex-direction: column;
-			transform: translateX(100%);
-			transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-			pointer-events: all;
+		   position: absolute;
+		   top: 0; left: 0;
+		   width: 220px; height: 100%;
+		   z-index: 2;
+		   background: rgba(10,10,18,0.88);
+		   backdrop-filter: blur(12px);
+		   border-right: 1px solid rgba(255,255,255,0.08);
+		   display: flex; flex-direction: column;
+		   transform: translateX(-100%);
+		   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+		   pointer-events: all;
 		}
 		#splat-sidebar.open { transform: translateX(0); }
 
@@ -145,6 +158,17 @@
 			display: flex; align-items: center; justify-content: center;
 			font-size: 18px;
 			flex-shrink: 0;
+			overflow: hidden;
+		}
+		.splat-thumb-img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+		.splat-thumb-emoji {
+			font-size: 18px;
+			line-height: 1;
 		}
 		.splat-info { min-width: 0; }
 		.splat-name {
@@ -316,7 +340,7 @@
 
 		@media (pointer: coarse) {
 			#joystick-left, #joystick-right { display: block; }
-			#help-toggle { bottom: 160px; }
+			#help-toggle, #help-panel { display: none !important; }
 		}
 
 		body.nohf .nohf { display: none; }
@@ -333,15 +357,17 @@
 
 	<!-- Top HUD -->
 	<div id="hud-top">
-		<span id="app-title" class="nohf">Splat Viewer</span>
-		<span id="camid"></span>
-		<span id="fps"></span>
+		<div id="hud-left">
+			<button id="sidebar-toggle" title="Splat library">
+				<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2" rx="1"/><rect x="3" y="11" width="18" height="2" rx="1"/><rect x="3" y="17" width="18" height="2" rx="1"/></svg>
+			</button>
+			<span id="app-title" class="nohf">Splat Viewer</span>
+		</div>
+		<div id="hud-right">
+			<span id="camid"></span>
+			<span id="fps"></span>
+		</div>
 	</div>
-
-	<!-- Sidebar toggle -->
-	<button id="sidebar-toggle" title="Splat library">
-		<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2" rx="1"/><rect x="3" y="11" width="18" height="2" rx="1"/><rect x="3" y="17" width="18" height="2" rx="1"/></svg>
-	</button>
 
 	<!-- Splat sidebar -->
 	<div id="splat-sidebar">
@@ -382,9 +408,8 @@
 		<div class="help-row"><span>Sprint</span><span><span class="help-key">Shift</span></span></div>
 		<div class="help-row"><span>Look</span><span>Click + Mouse</span></div>
 		<div class="help-row"><span>Release mouse</span><span><span class="help-key">Esc</span></span></div>
-		<div class="help-row"><span>Save view</span><span><span class="help-key">V</span></span></div>
-		<div class="help-row"><span>Cam presets</span><span><span class="help-key">0–9</span></span></div>
-		<div class="help-row" style="margin-top:6px;color:rgba(255,255,255,0.4);font-size:10px;"><span>Drop .ply / cameras.json to load</span></div>
+		<div id="help-save-view-row" class="help-row"><span>Save view</span><span><span class="help-key">V</span></span></div>
+		<div class="help-row" style="margin-top:6px;color:rgba(255,255,255,0.4);font-size:10px;"><span>Drop .ply to load</span></div>
 	</div>
 
 	<!-- Mobile joysticks -->
