@@ -1,5 +1,5 @@
 // ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = false; // Disable to prevent saving camera state to localStorage
+const ENABLE_SAVE_VIEW = true; // Disable to prevent saving camera state to localStorage
 
 
 // Global vertexCount for all code paths
@@ -960,8 +960,22 @@ async function main() {
             const activeBadge = realIndex === activeSplatIndex
                 ? `<div class="splat-card-active-badge">AKTIV</div>` : "";
 
+            function splatSizeLabel(vc) {
+                if (!vc)            return null;
+                if (vc < 100000)   return { label: "Tiny",     cls: "size-tiny" };
+                if (vc < 300000)   return { label: "Small",    cls: "size-small" };
+                if (vc < 600000)   return { label: "Medium",   cls: "size-medium" };
+                if (vc < 1000000)  return { label: "Large",    cls: "size-large" };
+                if (vc < 2000000)  return { label: "Huge",     cls: "size-huge" };
+                return               { label: "Gigantic",  cls: "size-gigantic" };
+            }
+            const sizeInfo = splatSizeLabel(splat.vertexCount);
+            const sizeBadge = sizeInfo
+                ? `<div class="splat-size-badge ${sizeInfo.cls}">${sizeInfo.label}</div>` : "";
+
             card.innerHTML = `
                 <div class="splat-card-thumb">${thumb}</div>
+                ${sizeBadge}
                 ${activeBadge}
                 <div class="splat-card-body">
                     <div class="splat-card-name">${splat.name}</div>
@@ -969,9 +983,10 @@ async function main() {
                 </div>`;
 
             card.addEventListener("click", () => {
+                closeOverlay();
+                if (realIndex === activeSplatIndex) return; // Don't reload if already active
                 activeSplatIndex = realIndex;
                 localStorage.setItem("activeSplatIndex", activeSplatIndex);
-                closeOverlay();
                 loadSplat(splat);
             });
             splatGridEl.appendChild(card);

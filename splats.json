@@ -3,39 +3,107 @@
         "name": "Greve Havn",
         "desc": "winter 2026, Denmark",
         "emoji": "⚓",
-        "tags": ["2026", "Havn", "Greve", "Winter"],
+        "tags": [
+            "2026",
+            "Havn",
+            "Greve",
+            "Winter"
+        ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.png",
         "url": "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
         "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
-        "cameraPosition": [-12.25, -5.73, 9.99],
-        "cameraRotation": [2.2, -0.4, 0],
+        "cameraPosition": [
+            -12.25,
+            -5.73,
+            9.99
+        ],
+        "cameraRotation": [
+            2.2,
+            -0.4,
+            0
+        ],
         "lat": 55.592818,
-        "lng": 12.354206
+        "lng": 12.354206,
+        "vertexCount": 1183407
     },
     {
         "name": "Brøndby Havn",
         "desc": "winter 2026, Denmark",
         "emoji": "⚓",
-        "tags": ["2026", "Havn", "Brøndby", "Winter"],
+        "tags": [
+            "2026",
+            "Havn",
+            "Brøndby",
+            "Winter"
+        ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.png",
         "url": "brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.splat",
         "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
-        "cameraPosition": [31.18, -19.03, 14.18],
-        "cameraRotation": [-1.88, -0.47, 0],
+        "cameraPosition": [
+            31.18,
+            -19.03,
+            14.18
+        ],
+        "cameraRotation": [
+            -1.88,
+            -0.47,
+            0
+        ],
         "lat": 55.609123,
-        "lng": 12.443446
+        "lng": 12.443446,
+        "vertexCount": 1734477
     },
     {
         "name": "Brøndby Bjerg",
         "desc": "2026, Denmark",
         "emoji": "⛰️",
-        "tags": ["2026", "Bjerg", "Brøndby", "Winter"],
+        "tags": [
+            "2026",
+            "Bjerg",
+            "Brøndby",
+            "Winter"
+        ],
         "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/Brøndby_Bjerg_Splat_d5f92d69-1764-4649-b641-c8b0053365cb.png",
         "url": "Brøndby_Bjerg_Splat_d5f92d69-1764-4649-b641-c8b0053365cb.splat",
         "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
-        "cameraPosition": [17.04, -29.15, 63.41],
-        "cameraRotation": [-2.8, -0.45, 0],
+        "cameraPosition": [
+            17.04,
+            -29.15,
+            63.41
+        ],
+        "cameraRotation": [
+            -2.8,
+            -0.45,
+            0
+        ],
         "lat": 55.612047,
-        "lng": 12.447471
+        "lng": 12.447471,
+        "vertexCount": 1011466
+    },
+    {
+        "name": "Albertslund Bjerg",
+        "desc": "2026, Denmark",
+        "emoji": "⛰️",
+        "tags": [
+            "2026",
+            "Bjerg",
+            "Albertslund"
+        ],
+        "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/Albertslund_Bjerg_Splat_7f8114da-f7fd-4f63-b430-55abc7a67304.png",
+        "url": "Albertslund_Bjerg_Splat_7f8114da-f7fd-4f63-b430-55abc7a67304.splat",
+        "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
+        "cameraPosition": [
+            17.04,
+            -29.15,
+            63.41
+        ],
+        "cameraRotation": [
+            -2.8,
+            -0.45,
+            0
+        ],
+        "lat": 55.68893348356224,
+        "lng": 12.363380347560003,
+        "vertexCount": 2723614
     }
 ]
