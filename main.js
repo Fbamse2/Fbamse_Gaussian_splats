@@ -1,5 +1,5 @@
 // ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = true; // Disable to prevent saving camera state to localStorage
+const ENABLE_SAVE_VIEW = false; // Disable to prevent saving camera state to localStorage
 
 
 // Global vertexCount for all code paths
@@ -35,9 +35,9 @@ loadSplatLibraryAndStart();
 
 
 // --- Camera state auto-save/load ---
-// Always start with defaults
-let cameraPosition = [-12.25, -5.73, 9.99];
-let cameraRotation = [2.2, -0.4, 0];
+// Always start with defaults (overridden by first splat's camera in main() if no saved state)
+let cameraPosition = [0, 0, 0];
+let cameraRotation = [0, 0, 0];
 // If localStorage has a value, overwrite with it (but do not save defaults)
 const savedCamera = localStorage.getItem("cameraState");
 if (savedCamera) {
@@ -640,36 +640,9 @@ async function main() {
     try {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
     } catch (err) { }
-    /*
-    const url = new URL(
-        params.get("url") || "output.splat",
-        window.location.href,
-    );
-    */
-
-    const url = new URL(
-        // "nike.splat",
-        // location.href,
-        params.get("url") || "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
-        "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
-    );
-
-
-    const req = await fetch(url, {
-        mode: "cors",
-        credentials: "omit",
-    });
-    console.log(req);
-    if (req.status != 200)
-        throw new Error(req.status + " Unable to load " + req.url);
-
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
-    const reader = req.body.getReader();
-    let splatData = new Uint8Array(req.headers.get("content-length"));
-
-    const downsample =
-        splatData.length / rowLength > 500000 ? 1 : 1 / devicePixelRatio;
-    console.log(splatData.length / rowLength, downsample);
+    let splatData = new Uint8Array(0);
+    const downsample = 1;
 
     const worker = new Worker(
         URL.createObjectURL(
@@ -748,6 +721,7 @@ async function main() {
     gl.vertexAttribDivisor(a_index, 1);
 
     const resize = () => {
+        gl.useProgram(program);
         gl.uniform2fv(u_focal, new Float32Array([camera.fx, camera.fy]));
 
         projectionMatrix = getProjectionMatrix(
@@ -1034,6 +1008,7 @@ async function main() {
             stopLoading = false;
             const newReader = r.body.getReader();
             const newSplatData = new Uint8Array(parseInt(r.headers.get("content-length")) || 0);
+            splatData = newSplatData; // keep outer splatData in sync for progress tracking
             let newBytesRead = 0;
             document.getElementById("spinner").style.display = "";
             document.getElementById("progress").style.display = "";
@@ -1057,11 +1032,18 @@ async function main() {
     renderSplatGrid();
     // On load, ensure the correct splat is loaded
     if (activeSplatIndex >= 0 && activeSplatIndex < splatLibrary.length) {
-        // On page load, do NOT reset camera to splat defaults
-        const splat = { ...splatLibrary[activeSplatIndex] };
-        delete splat.cameraPosition;
-        delete splat.cameraRotation;
-        loadSplat(splat);
+        const splat = splatLibrary[activeSplatIndex];
+        if (!savedCamera && splat.cameraPosition && splat.cameraRotation) {
+            // No saved camera — use this splat's default camera
+            cameraPosition = [...splat.cameraPosition];
+            cameraRotation = [...splat.cameraRotation];
+            viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
+        }
+        // Pass a copy without camera props so loadSplat doesn't overwrite the position we just set
+        const s = { ...splat };
+        delete s.cameraPosition;
+        delete s.cameraRotation;
+        loadSplat(s);
     }
 
     // ── Help panel ───────────────────────────────────────────────
@@ -1142,6 +1124,7 @@ async function main() {
     const moveSpeed = 0.1;
 
     const frame = (now) => {
+        gl.useProgram(program);
         // console.debug('[DEBUG] frame vertexCount:', vertexCount);
         // Get camera direction vectors
         const yaw = cameraRotation[0];
@@ -1332,36 +1315,6 @@ async function main() {
         selectFile(e.dataTransfer.files[0]);
     });
 
-    let bytesRead = 0;
-    let lastVertexCount = -1;
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done || stopLoading) break;
-
-        splatData.set(value, bytesRead);
-        bytesRead += value.length;
-
-        if (vertexCount > lastVertexCount) {
-            if (!isPly(splatData)) {
-                worker.postMessage({
-                    buffer: splatData.buffer,
-                    vertexCount: Math.floor(bytesRead / rowLength),
-                });
-            }
-            lastVertexCount = vertexCount;
-        }
-    }
-    if (!stopLoading) {
-        if (isPly(splatData)) {
-            worker.postMessage({ ply: splatData.buffer, save: false });
-        } else {
-            worker.postMessage({
-                buffer: splatData.buffer,
-                vertexCount: Math.floor(bytesRead / rowLength),
-            });
-        }
-    }
 }
 
 main().catch((err) => {
