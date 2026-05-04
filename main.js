@@ -1,9 +1,13 @@
+// ── Feature toggles ─────────────────────────────────────────────
+const ENABLE_SAVE_VIEW = false;
+
 // ── Splat library – add more entries here to populate the sidebar ──
 const splatLibrary = [
     {
         name: "Greve Havn",
         desc: "Outdoor harbour scene",
         emoji: "⚓",
+        image: "",
         url: "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
         base: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
     },
@@ -11,21 +15,10 @@ const splatLibrary = [
     // { name: "Indoor Room", desc: "Living room", emoji: "🛋️", url: "room.splat", base: "https://..." },
 ];
 
-let cameras = [
-    {
-        id: 0,
-        position: [-2.53, -5.32, -16.74],
-        rotation: [
-            [1, -0.02, 0.04],
-            [0, 0.92, 0.39],
-            [-0.05, -0.39, 0.92],
-        ],
-        fy: 1164.6601287484507,
-        fx: 1159.5880733038064,
-    },
-];
-
-let camera = cameras[0];
+const camera = {
+    fy: 1164.6601287484507,
+    fx: 1159.5880733038064,
+};
 
 function getProjectionMatrix(fx, fy, width, height) {
     const znear = 0.2;
@@ -790,7 +783,7 @@ async function main() {
     };
 
     let activeKeys = new Set();
-    let currentCameraIndex = 0;
+    let isSaving = false;
 
     // Mouse look controls - fixed with proper sensitivity and no jump
     canvas.addEventListener("click", () => {
@@ -828,28 +821,8 @@ async function main() {
     window.addEventListener("keydown", (e) => {
         carousel = false;
         activeKeys.add(e.code);
-        
-        if (/\d/.test(e.key)) {
-            currentCameraIndex = parseInt(e.key);
-            camera = cameras[currentCameraIndex];
-            viewMatrix = getViewMatrix(camera);
-            camid.innerText = "cam  " + currentCameraIndex;
-            return;
-        }
-        if (["-", "_"].includes(e.key)) {
-            currentCameraIndex = (currentCameraIndex + cameras.length - 1) % cameras.length;
-            viewMatrix = getViewMatrix(cameras[currentCameraIndex]);
-            camid.innerText = "cam  " + currentCameraIndex;
-            return;
-        }
-        if (["+", "="].includes(e.key)) {
-            currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-            viewMatrix = getViewMatrix(cameras[currentCameraIndex]);
-            camid.innerText = "cam  " + currentCameraIndex;
-            return;
-        }
-        let isSaving = false;
-        if (e.code == "KeyV") {
+
+        if (ENABLE_SAVE_VIEW && e.code == "KeyV") {
             isSaving = true; // Prevent hashchange from reloading
             
             // Save position and full 3x3 rotation matrix (9 values)
@@ -908,14 +881,22 @@ async function main() {
     const sidebarEl = document.getElementById("splat-sidebar");
     const sidebarToggle = document.getElementById("sidebar-toggle");
     const splatListEl = document.getElementById("splat-list");
+    const saveViewRowEl = document.getElementById("help-save-view-row");
     let activeSplatIndex = 0;
+
+    if (saveViewRowEl && !ENABLE_SAVE_VIEW) {
+        saveViewRowEl.style.display = "none";
+    }
 
     function renderSplatList() {
         splatListEl.innerHTML = "";
         splatLibrary.forEach((splat, i) => {
             const item = document.createElement("div");
             item.className = "splat-item" + (i === activeSplatIndex ? " active" : "");
-            item.innerHTML = `<div class="splat-thumb">${splat.emoji || "✨"}</div>
+            const thumb = splat.image
+                ? `<img class="splat-thumb-img" src="${splat.image}" alt="${splat.name} preview" loading="lazy" />`
+                : `<div class="splat-thumb-emoji">${splat.emoji || "✨"}</div>`;
+            item.innerHTML = `<div class="splat-thumb">${thumb}</div>
                 <div class="splat-info">
                     <div class="splat-name">${splat.name}</div>
                     <div class="splat-desc">${splat.desc || ""}</div>
@@ -1091,10 +1072,10 @@ async function main() {
         const jm = window._joyMove;
         const jl = window._joyLook;
         if (jm && (jm.x !== 0 || jm.y !== 0)) {
-            // left stick: x = strafe, y = forward/back
-            moveDelta.x += (rightX * jm.x - forwardX * jm.y) * currentSpeed;
-            moveDelta.z += (rightZ * jm.x - forwardZ * jm.y) * currentSpeed;
-            moveDelta.y += (-forwardY * jm.y) * currentSpeed;
+            // left stick: x = strafe, y = forward/back (jm.y negative = stick up = move forward)
+            moveDelta.x += (rightX * jm.x + forwardX * jm.y) * currentSpeed;
+            moveDelta.z += (rightZ * jm.x + forwardZ * jm.y) * currentSpeed;
+            moveDelta.y += (forwardY * jm.y) * currentSpeed;
         }
         // Joystick look (right stick)
         if (jl && (jl.x !== 0 || jl.y !== 0)) {
@@ -1133,9 +1114,6 @@ async function main() {
             document.getElementById("progress").style.display = "none";
         }
         fps.innerText = Math.round(avgFps) + " fps";
-        if (isNaN(currentCameraIndex)) {
-            camid.innerText = "";
-        }
         lastFrame = now;
         requestAnimationFrame(frame);
     };
@@ -1150,37 +1128,21 @@ async function main() {
 
     const selectFile = (file) => {
         const fr = new FileReader();
-        if (/\.json$/i.test(file.name)) {
-            fr.onload = () => {
-                cameras = JSON.parse(fr.result);
-                viewMatrix = getViewMatrix(cameras[0]);
-                projectionMatrix = getProjectionMatrix(
-                    camera.fx / downsample,
-                    camera.fy / downsample,
-                    canvas.width,
-                    canvas.height,
-                );
-                gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
-                console.log("Loaded Cameras");
-            };
-            fr.readAsText(file);
-        } else {
-            stopLoading = true;
-            fr.onload = () => {
-                splatData = new Uint8Array(fr.result);
-                console.log("Loaded", Math.floor(splatData.length / rowLength));
+        stopLoading = true;
+        fr.onload = () => {
+            splatData = new Uint8Array(fr.result);
+            console.log("Loaded", Math.floor(splatData.length / rowLength));
 
-                if (isPly(splatData)) {
-                    worker.postMessage({ ply: splatData.buffer, save: true });
-                } else {
-                    worker.postMessage({
-                        buffer: splatData.buffer,
-                        vertexCount: Math.floor(splatData.length / rowLength),
-                    });
-                }
-            };
-            fr.readAsArrayBuffer(file);
-        }
+            if (isPly(splatData)) {
+                worker.postMessage({ ply: splatData.buffer, save: true });
+            } else {
+                worker.postMessage({
+                    buffer: splatData.buffer,
+                    vertexCount: Math.floor(splatData.length / rowLength),
+                });
+            }
+        };
+        fr.readAsArrayBuffer(file);
     };
 
     window.addEventListener("hashchange", (e) => {
