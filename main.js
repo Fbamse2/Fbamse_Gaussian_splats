@@ -1,5 +1,5 @@
 // ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = false; // Disable to prevent saving camera state to localStorage
+const ENABLE_SAVE_VIEW = true; // Disable to prevent saving camera state to localStorage
 
 
 // Global vertexCount for all code paths
@@ -13,44 +13,25 @@ const savedSplatIndex = localStorage.getItem("activeSplatIndex");
 if (savedSplatIndex !== null && !isNaN(Number(savedSplatIndex))) {
     activeSplatIndex = Number(savedSplatIndex);
 }
-const splatLibrary = [
-    {
-        name: "Greve Havn",
-        desc: "winter 2026, Denmark",
-        emoji: "⚓",
-        tags: ["2026", "Havn", "Greve", "Winter"],
-        image: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.png",
-        url: "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
-        base: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
-        cameraPosition: [-12.25, -5.73, 9.99],
-        cameraRotation: [2.2, -0.4, 0],
-    },
-    {
-        name: "Brøndby Havn",
-        desc: "winter 2026, Denmark",
-        emoji: "⚓",
-        tags: ["2026", "Havn", "Brøndby", "Winter"],
-        image: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.png",
-        url: "brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.splat",
-        base: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
-        cameraPosition: [31.18, -19.03, 14.18],
-        cameraRotation: [-1.88, -0.47, 0],
-    },
-    // Add more splats here, e.g.:
-    /*
-    {
-        name: "Indoor Room",
-        desc: "Living room",
-        emoji: "🛋️",
-        tags: ["indendørs"],
-        image: "https://.../room.png",
-        url: "room.splat",
-        base: "https://...",
-        cameraPosition: [0,0,0],
-        cameraRotation: [0,0,0],
-    },
-    */
-];
+
+let splatLibrary = [];
+
+// Load splatLibrary from external JSON before running the rest of the app
+async function loadSplatLibraryAndStart() {
+    try {
+        const resp = await fetch('splats.json');
+        if (!resp.ok) throw new Error('Failed to load splats.json');
+        splatLibrary = await resp.json();
+    } catch (e) {
+        console.error('Error loading splats.json:', e);
+        splatLibrary = [];
+    }
+    // Now start the main app logic
+    main();
+}
+
+// Start loading
+loadSplatLibraryAndStart();
 
 
 // --- Camera state auto-save/load ---
@@ -1027,6 +1008,10 @@ async function main() {
         if (overlayOpen) closeOverlay(); else openOverlay();
     });
     overlayClose.addEventListener("click", closeOverlay);
+
+    // Expose globally for map popup access
+    window.loadSplat = loadSplat;
+    window.closeOverlay = closeOverlay;
 
     // Ensure stopLoading is defined at the top-level scope
     let stopLoading = false;
