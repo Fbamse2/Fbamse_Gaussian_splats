@@ -1,19 +1,77 @@
 // ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = false;
+const ENABLE_SAVE_VIEW = false; // Disable to prevent saving camera state to localStorage
 
-// ── Splat library – add more entries here to populate the sidebar ──
+
+// Global vertexCount for all code paths
+let vertexCount = 0;
+console.debug('[DEBUG] vertexCount initialized:', vertexCount);
+
+// Global: active splat index (persisted)
+let activeSplatIndex = 0;
+// Restore activeSplatIndex from localStorage if present
+const savedSplatIndex = localStorage.getItem("activeSplatIndex");
+if (savedSplatIndex !== null && !isNaN(Number(savedSplatIndex))) {
+    activeSplatIndex = Number(savedSplatIndex);
+}
 const splatLibrary = [
     {
         name: "Greve Havn",
-        desc: "Outdoor harbour scene",
+        desc: "winter 2026, Denmark",
         emoji: "⚓",
-        image: "",
+        tags: ["2026", "Havn", "Greve", "Winter"],
+        image: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.png",
         url: "greve_havn_splat_c51e10e7-983c-42f1-a5bf-6e1411100b70.splat",
         base: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
+        cameraPosition: [-12.25, -5.73, 9.99],
+        cameraRotation: [2.2, -0.4, 0],
+    },
+    {
+        name: "Brøndby Havn",
+        desc: "winter 2026, Denmark",
+        emoji: "⚓",
+        tags: ["2026", "Havn", "Brøndby", "Winter"],
+        image: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.png",
+        url: "brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.splat",
+        base: "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
+        cameraPosition: [31.18, -19.03, 14.18],
+        cameraRotation: [-1.88, -0.47, 0],
     },
     // Add more splats here, e.g.:
-    // { name: "Indoor Room", desc: "Living room", emoji: "🛋️", url: "room.splat", base: "https://..." },
+    /*
+    {
+        name: "Indoor Room",
+        desc: "Living room",
+        emoji: "🛋️",
+        tags: ["indendørs"],
+        image: "https://.../room.png",
+        url: "room.splat",
+        base: "https://...",
+        cameraPosition: [0,0,0],
+        cameraRotation: [0,0,0],
+    },
+    */
 ];
+
+
+// --- Camera state auto-save/load ---
+// Always start with defaults
+let cameraPosition = [-12.25, -5.73, 9.99];
+let cameraRotation = [2.2, -0.4, 0];
+// If localStorage has a value, overwrite with it (but do not save defaults)
+const savedCamera = localStorage.getItem("cameraState");
+if (savedCamera) {
+    try {
+        const { position, rotation } = JSON.parse(savedCamera);
+        if (Array.isArray(position) && Array.isArray(rotation)) {
+            cameraPosition = [...position];
+            cameraRotation = [...rotation];
+        }
+    } catch (e) { /* ignore */ }
+}
+
+function saveCameraState() {
+    localStorage.setItem("cameraState", JSON.stringify({ position: cameraPosition, rotation: cameraRotation }));
+}
 
 const camera = {
     fy: 1164.6601287484507,
@@ -151,7 +209,6 @@ function translate4(a, x, y, z) {
 
 function createWorker(self) {
     let buffer;
-    let vertexCount = 0;
     let viewProj;
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
     let lastProj = [];
@@ -315,7 +372,7 @@ function createWorker(self) {
         const header_end_index = header.indexOf(header_end);
         if (header_end_index < 0)
             throw new Error("Unable to read .ply file header");
-        const vertexCount = parseInt(/element vertex (\d+)\n/.exec(header)[1]);
+        const plyVertexCount = parseInt(/element vertex (\d+)\n/.exec(header)[1]);
         let row_offset = 0,
             offsets = {},
             types = {};
@@ -357,9 +414,9 @@ function createWorker(self) {
             },
         );
 
-        let sizeList = new Float32Array(vertexCount);
-        let sizeIndex = new Uint32Array(vertexCount);
-        for (row = 0; row < vertexCount; row++) {
+        let sizeList = new Float32Array(plyVertexCount);
+        let sizeIndex = new Uint32Array(plyVertexCount);
+        for (row = 0; row < plyVertexCount; row++) {
             sizeIndex[row] = row;
             if (!types["scale_0"]) continue;
             const size =
@@ -373,9 +430,9 @@ function createWorker(self) {
         sizeIndex.sort((b, a) => sizeList[a] - sizeList[b]);
 
         const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
-        const buffer = new ArrayBuffer(rowLength * vertexCount);
+        const buffer = new ArrayBuffer(rowLength * plyVertexCount);
 
-        for (let j = 0; j < vertexCount; j++) {
+        for (let j = 0; j < plyVertexCount; j++) {
             row = sizeIndex[j];
 
             const position = new Float32Array(buffer, j * rowLength, 3);
@@ -556,8 +613,7 @@ void main () {
 
 
 // Free cam state - start at y=5, x=0, z=0
-let cameraPosition = [-12.25, -5.73, 9.99];
-let cameraRotation = [2.2, -0.4, 0]; // yaw, pitch, roll
+// Default camera state (used if splat doesn't specify)
 let mouseLocked = false;
 
 function createViewMatrix(position, rotation) {
@@ -787,6 +843,7 @@ async function main() {
 
     // Mouse look controls - fixed with proper sensitivity and no jump
     canvas.addEventListener("click", () => {
+        if (overlayOpen) return; // Don't capture mouse when browser is open
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         canvas.requestPointerLock();
     });
@@ -816,6 +873,7 @@ async function main() {
         cameraRotation[1] -= e.movementY * sensitivity;
         cameraRotation[1] = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraRotation[1]));
         viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
+        saveCameraState();
     }
 
     window.addEventListener("keydown", (e) => {
@@ -824,40 +882,12 @@ async function main() {
 
         if (ENABLE_SAVE_VIEW && e.code == "KeyV") {
             isSaving = true; // Prevent hashchange from reloading
-            
-            // Save position and full 3x3 rotation matrix (9 values)
+            // Save position and yaw/pitch/roll for splatLibrary
             const pos = cameraPosition.map(p => Math.round(p * 100) / 100);
-            
-            // Get the 3x3 rotation matrix from the current camera orientation
-            const yaw = cameraRotation[0];
-            const pitch = cameraRotation[1];
-            const roll = cameraRotation[2];
-            
-            const cy = Math.cos(yaw);
-            const sy = Math.sin(yaw);
-            const cp = Math.cos(pitch);
-            const sp = Math.sin(pitch);
-            const cr = Math.cos(roll);
-            const sr = Math.sin(roll);
-            
-            // Build the 3x3 rotation matrix
-            const forward = [-sy * cp, sp, -cy * cp];
-            const right = [cy, 0, -sy];
-            const up = [sy * sp, cp, cy * sp];
-            
-            const rotMatrix = [
-                right[0], up[0], -forward[0],
-                right[1], up[1], -forward[1],
-                right[2], up[2], -forward[2]
-            ];
-            
-            // Round to 2 decimal places
-            const rot = rotMatrix.map(r => Math.round(r * 100) / 100);
-            
-            const hashData = `[${pos[0]},${pos[1]},${pos[2]}][${rot.join(",")}]`;
+            const rot = cameraRotation.map(r => Math.round(r * 100) / 100);
+            const hashData = `[${pos[0]},${pos[1]},${pos[2]}][${rot[0]},${rot[1]},${rot[2]}]`;
             location.hash = hashData;
             camid.innerText = "saved!";
-            
             setTimeout(() => {
                 if (camid.innerText === "saved!") camid.innerText = "";
                 isSaving = false; // Re-enable hashchange after saving
@@ -877,45 +907,144 @@ async function main() {
         e.preventDefault();
     }, { passive: false });
 
-    // ── Sidebar ──────────────────────────────────────────────────
-    const sidebarEl = document.getElementById("splat-sidebar");
-    const sidebarToggle = document.getElementById("sidebar-toggle");
-    const splatListEl = document.getElementById("splat-list");
+    // ── Splat browser overlay ──────────────────────────────────
+    const overlayEl = document.getElementById("splat-overlay");
+    const browserBtn = document.getElementById("splat-browser-btn");
+    const overlayClose = document.getElementById("overlay-close");
+    const overlayFilters = document.getElementById("overlay-filters");
+    const splatGridEl = document.getElementById("splat-grid");
+    const overlayCountEl = document.getElementById("overlay-count");
     const saveViewRowEl = document.getElementById("help-save-view-row");
-    let activeSplatIndex = 0;
 
     if (saveViewRowEl && !ENABLE_SAVE_VIEW) {
         saveViewRowEl.style.display = "none";
     }
 
-    function renderSplatList() {
-        splatListEl.innerHTML = "";
-        splatLibrary.forEach((splat, i) => {
-            const item = document.createElement("div");
-            item.className = "splat-item" + (i === activeSplatIndex ? " active" : "");
-            const thumb = splat.image
-                ? `<img class="splat-thumb-img" src="${splat.image}" alt="${splat.name} preview" loading="lazy" />`
-                : `<div class="splat-thumb-emoji">${splat.emoji || "✨"}</div>`;
-            item.innerHTML = `<div class="splat-thumb">${thumb}</div>
-                <div class="splat-info">
-                    <div class="splat-name">${splat.name}</div>
-                    <div class="splat-desc">${splat.desc || ""}</div>
-                </div>`;
-            item.addEventListener("click", () => {
-                activeSplatIndex = i;
-                renderSplatList();
-                sidebarEl.classList.remove("open");
-                loadSplat(splat);
-            });
-            splatListEl.appendChild(item);
+    let overlayOpen = false;
+    let activeTag = "all";
+    let activeYear = "all";
+
+    function openOverlay() {
+        overlayOpen = true;
+        overlayEl.classList.add("open");
+        // Release pointer lock when overlay opens
+        if (document.pointerLockElement) document.exitPointerLock();
+        renderFilters();
+        renderSplatGrid();
+    }
+
+    function closeOverlay() {
+        overlayOpen = false;
+        overlayEl.classList.remove("open");
+    }
+
+    function getAllTags() {
+        const set = new Set();
+        splatLibrary.forEach(s => (s.tags || []).forEach(t => set.add(t)));
+        return [...set].sort();
+    }
+
+    function getAllYears() {
+        // Removed: getAllYears, year is now a tag
+        return [];
+    }
+
+    function renderFilters() {
+        const tags = getAllTags();
+        overlayFilters.innerHTML = "";
+
+        // Category chips
+        const allChip = document.createElement("button");
+        allChip.className = "filter-chip" + (activeTag === "all" ? " active" : "");
+        allChip.textContent = "Alle";
+        allChip.addEventListener("click", () => { activeTag = "all"; renderFilters(); renderSplatGrid(); });
+        overlayFilters.appendChild(allChip);
+
+        tags.forEach(tag => {
+            const chip = document.createElement("button");
+            chip.className = "filter-chip" + (activeTag === tag ? " active" : "");
+            chip.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+            chip.addEventListener("click", () => { activeTag = tag; renderFilters(); renderSplatGrid(); });
+            overlayFilters.appendChild(chip);
         });
     }
 
+    function renderSplatGrid() {
+        splatGridEl.innerHTML = "";
+
+        const filtered = splatLibrary.filter((s, i) => {
+            const tagOk = activeTag === "all" || (s.tags || []).includes(activeTag);
+            return tagOk;
+        });
+
+        overlayCountEl.textContent = filtered.length > 0 ? `(${filtered.length})` : "";
+
+        if (filtered.length === 0) {
+            const empty = document.createElement("div");
+            empty.id = "overlay-empty";
+            empty.textContent = "Ingen scener fundet.";
+            splatGridEl.appendChild(empty);
+            return;
+        }
+
+        filtered.forEach(splat => {
+            const realIndex = splatLibrary.indexOf(splat);
+            const card = document.createElement("div");
+            card.className = "splat-card" + (realIndex === activeSplatIndex ? " active" : "");
+
+            const thumb = splat.image
+                ? `<img src="${splat.image}" alt="${splat.name}" loading="lazy" />`
+                : `<div class="splat-card-thumb-emoji">${splat.emoji || "✨"}</div>`;
+
+            const tagsHtml = (splat.tags || []).map(t =>
+                `<span class="splat-tag">${t}</span>`
+            ).join("");
+
+            // Removed yearHtml, year is now a tag
+            const yearHtml = "";
+            const activeBadge = realIndex === activeSplatIndex
+                ? `<div class="splat-card-active-badge">AKTIV</div>` : "";
+
+            card.innerHTML = `
+                <div class="splat-card-thumb">${thumb}</div>
+                ${activeBadge}
+                <div class="splat-card-body">
+                    <div class="splat-card-name">${splat.name}</div>
+                    <div class="splat-card-meta">${tagsHtml}${yearHtml}</div>
+                </div>`;
+
+            card.addEventListener("click", () => {
+                activeSplatIndex = realIndex;
+                localStorage.setItem("activeSplatIndex", activeSplatIndex);
+                closeOverlay();
+                loadSplat(splat);
+            });
+            splatGridEl.appendChild(card);
+        });
+    }
+
+    browserBtn.addEventListener("click", () => {
+        if (overlayOpen) closeOverlay(); else openOverlay();
+    });
+    overlayClose.addEventListener("click", closeOverlay);
+
+    // Ensure stopLoading is defined at the top-level scope
+    let stopLoading = false;
     function loadSplat(splat) {
+        console.debug('[DEBUG] loadSplat called with:', splat);
+        // Set camera position/rotation if provided by splat
+        if (splat.cameraPosition && splat.cameraRotation) {
+            cameraPosition = [...splat.cameraPosition];
+            cameraRotation = [...splat.cameraRotation];
+            viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
+            saveCameraState(); // Reset camera state in storage
+        }
         stopLoading = true;
         vertexCount = 0;
+        console.debug('[DEBUG] vertexCount reset to 0');
         const splatUrl = new URL(splat.url, splat.base);
         fetch(splatUrl, { mode: "cors", credentials: "omit" }).then(async (r) => {
+            console.debug('[DEBUG] Fetch response:', r);
             if (!r.ok) { console.error("Failed to load splat:", r.status); return; }
             stopLoading = false;
             const newReader = r.body.getReader();
@@ -928,22 +1057,27 @@ async function main() {
                 if (done || stopLoading) break;
                 newSplatData.set(value, newBytesRead);
                 newBytesRead += value.length;
-                worker.postMessage({ buffer: newSplatData.buffer, vertexCount: Math.floor(newBytesRead / rowLength) });
+                const debugVC = Math.floor(newBytesRead / rowLength);
+                console.debug('[DEBUG] Streaming splat data:', { newBytesRead, debugVC });
+                worker.postMessage({ buffer: newSplatData.buffer, vertexCount: debugVC });
             }
             if (!stopLoading) {
-                worker.postMessage({ buffer: newSplatData.buffer, vertexCount: Math.floor(newBytesRead / rowLength) });
+                const debugVC = Math.floor(newBytesRead / rowLength);
+                console.debug('[DEBUG] Final splat data:', { newBytesRead, debugVC });
+                worker.postMessage({ buffer: newSplatData.buffer, vertexCount: debugVC });
             }
         });
     }
 
-    sidebarToggle.addEventListener("click", () => {
-        sidebarEl.classList.toggle("open");
-    });
-    // Close sidebar when clicking canvas
-    canvas.addEventListener("pointerdown", () => {
-        sidebarEl.classList.remove("open");
-    });
-    renderSplatList();
+    renderSplatGrid();
+    // On load, ensure the correct splat is loaded
+    if (activeSplatIndex >= 0 && activeSplatIndex < splatLibrary.length) {
+        // On page load, do NOT reset camera to splat defaults
+        const splat = { ...splatLibrary[activeSplatIndex] };
+        delete splat.cameraPosition;
+        delete splat.cameraRotation;
+        loadSplat(splat);
+    }
 
     // ── Help panel ───────────────────────────────────────────────
     const helpToggle = document.getElementById("help-toggle");
@@ -995,6 +1129,7 @@ async function main() {
             }
         }, { passive: false });
 
+
         const release = (e) => {
             for (const t of e.changedTouches) {
                 if (t.identifier !== activeTouchId) continue;
@@ -1015,13 +1150,14 @@ async function main() {
     window._joyMove = joyMove;
     window._joyLook = joyLook;
 
-    let vertexCount = 0;
+    // let vertexCount = 0; // REMOVE this line if present in inner scopes
     let lastFrame = 0;
     let avgFps = 0;
 
     const moveSpeed = 0.1;
 
     const frame = (now) => {
+        // console.debug('[DEBUG] frame vertexCount:', vertexCount);
         // Get camera direction vectors
         const yaw = cameraRotation[0];
         const pitch = cameraRotation[1];
@@ -1090,6 +1226,7 @@ async function main() {
             cameraPosition[1] += moveDelta.y;
             cameraPosition[2] += moveDelta.z;
             viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
+            saveCameraState();
         }
         
         const viewProj = multiply4(projectionMatrix, viewMatrix);
@@ -1099,6 +1236,7 @@ async function main() {
         avgFps = avgFps * 0.9 + currentFps * 0.1;
         
         if (vertexCount > 0) {
+            // console.debug('[DEBUG] Drawing with vertexCount:', vertexCount);
             document.getElementById("spinner").style.display = "none";
             gl.uniformMatrix4fv(u_view, false, viewMatrix);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1174,12 +1312,12 @@ async function main() {
                 const R = rotMatrix;
                 const t = cameraPosition;
                 viewMatrix = [
-                    R[0], R[1], R[2], 0,
-                    R[3], R[4], R[5], 0,
-                    R[6], R[7], R[8], 0,
+                    R[0], R[3], R[6], 0,
+                    R[1], R[4], R[7], 0,
+                    R[2], R[5], R[8], 0,
                     -t[0] * R[0] - t[1] * R[3] - t[2] * R[6],
                     -t[0] * R[1] - t[1] * R[4] - t[2] * R[7],
-                    -t[0] * R[2] - t[1] * R[5] - t[2] * R[8],
+                    -t[0] * R[2] - t[1] * R[6] - t[2] * R[8],
                     1
                 ];
                 
@@ -1211,7 +1349,6 @@ async function main() {
 
     let bytesRead = 0;
     let lastVertexCount = -1;
-    let stopLoading = false;
 
     while (true) {
         const { done, value } = await reader.read();
