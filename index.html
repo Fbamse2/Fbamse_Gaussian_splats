@@ -2,196 +2,325 @@
 <html lang="en" dir="ltr">
 
 <head>
-	<title>WebGL Gaussian Splat Viewer - Free Cam</title>
+	<title>Gaussian Splat Viewer</title>
 	<meta charset="utf-8" />
-	<meta name="viewport"
-		content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<style>
+		*, *::before, *::after { box-sizing: border-box; }
+
 		body {
 			overflow: hidden;
 			margin: 0;
 			height: 100vh;
 			width: 100vw;
-			font-family: sans-serif;
-			background: black;
-			text-shadow: 0 0 3px black;
-		}
-
-		a,
-		body {
-			color: white;
-		}
-
-		#info {
-			z-index: 100;
-			position: absolute;
-			top: 10px;
-			left: 15px;
-		}
-
-		h3 {
-			margin: 5px 0;
-		}
-
-		p {
-			margin: 5px 0;
-			font-size: small;
-		}
-
-		.cube-wrapper {
-			transform-style: preserve-3d;
-		}
-
-		.cube {
-			transform-style: preserve-3d;
-			transform: rotateX(45deg) rotateZ(45deg);
-			animation: rotation 2s infinite;
-		}
-
-		.cube-faces {
-			transform-style: preserve-3d;
-			height: 80px;
-			width: 80px;
-			position: relative;
-			transform-origin: 0 0;
-			transform: translateX(0) translateY(0) translateZ(-40px);
-		}
-
-		.cube-face {
-			position: absolute;
-			inset: 0;
-			background: #0017ff;
-			border: solid 1px #ffffff;
-		}
-
-		.cube-face.top {
-			transform: translateZ(80px);
-		}
-
-		.cube-face.front {
-			transform-origin: 0 50%;
-			transform: rotateY(-90deg);
-		}
-
-		.cube-face.back {
-			transform-origin: 0 50%;
-			transform: rotateY(-90deg) translateZ(-80px);
-		}
-
-		.cube-face.right {
-			transform-origin: 50% 0;
-			transform: rotateX(-90deg) translateY(-80px);
-		}
-
-		.cube-face.left {
-			transform-origin: 50% 0;
-			transform: rotateX(-90deg) translateY(-80px) translateZ(80px);
-		}
-
-		@keyframes rotation {
-			0% {
-				transform: rotateX(45deg) rotateY(0) rotateZ(45deg);
-				animation-timing-function: cubic-bezier(0.17,
-						0.84,
-						0.44,
-						1);
-			}
-
-			50% {
-				transform: rotateX(45deg) rotateY(0) rotateZ(225deg);
-				animation-timing-function: cubic-bezier(0.76,
-						0.05,
-						0.86,
-						0.06);
-			}
-
-			100% {
-				transform: rotateX(45deg) rotateY(0) rotateZ(405deg);
-				animation-timing-function: cubic-bezier(0.17,
-						0.84,
-						0.44,
-						1);
-			}
-		}
-
-		.scene,
-		#message {
-			position: absolute;
-			display: flex;
-			top: 0;
-			right: 0;
-			left: 0;
-			bottom: 0;
-			z-index: 2;
-			height: 100%;
-			width: 100%;
-			align-items: center;
-			justify-content: center;
-		}
-
-		#message {
-			font-weight: bold;
-			font-size: large;
-			color: red;
-			pointer-events: none;
-		}
-
-		details {
-			font-size: small;
-
-		}
-
-		#progress {
-			position: absolute;
-			top: 0;
-			height: 5px;
-			background: blue;
-			z-index: 99;
-			transition: width 0.1s ease-in-out;
-		}
-
-		#quality {
-			position: absolute;
-			bottom: 10px;
-			z-index: 999;
-			right: 10px;
-		}
-
-		#caminfo {
-			position: absolute;
-			top: 10px;
-			z-index: 999;
-			right: 10px;
+			font-family: 'Segoe UI', system-ui, sans-serif;
+			background: #0a0a0f;
+			color: #e8e8f0;
 		}
 
 		#canvas {
 			display: block;
 			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
+			top: 0; left: 0;
+			width: 100%; height: 100%;
 			touch-action: none;
 		}
 
-		#instructions {
-			background: rgba(0, 0, 0, 0.6);
-			white-space: pre-wrap;
-			padding: 10px;
+		/* ── Top HUD ── */
+		#hud-top {
+			position: absolute;
+			top: 0; left: 0; right: 0;
+			height: 48px;
+			z-index: 200;
+			display: flex;
+			align-items: center;
+			padding: 0 14px;
+			gap: 10px;
+			background: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
+			pointer-events: none;
+		}
+
+		#app-title {
+			font-size: 13px;
+			font-weight: 600;
+			letter-spacing: 0.06em;
+			color: rgba(255,255,255,0.85);
+			text-transform: uppercase;
+		}
+
+		#fps {
+			margin-left: auto;
+			font-size: 12px;
+			font-variant-numeric: tabular-nums;
+			color: rgba(255,255,255,0.55);
+			background: rgba(0,0,0,0.35);
+			padding: 2px 8px;
+			border-radius: 20px;
+		}
+
+		#camid {
+			font-size: 12px;
+			color: rgba(255,255,255,0.55);
+			background: rgba(0,0,0,0.35);
+			padding: 2px 8px;
+			border-radius: 20px;
+			min-width: 48px;
+			text-align: center;
+		}
+
+		/* ── Sidebar toggle button ── */
+		#sidebar-toggle {
+			position: absolute;
+			top: 10px; right: 10px;
+			z-index: 300;
+			width: 36px; height: 36px;
 			border-radius: 10px;
-			font-size: x-small;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(20,20,30,0.75);
+			backdrop-filter: blur(8px);
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			pointer-events: all;
+			transition: background 0.2s;
+		}
+		#sidebar-toggle:hover { background: rgba(40,40,60,0.85); }
+		#sidebar-toggle svg { width: 18px; height: 18px; fill: none; stroke: #ccc; stroke-width: 2; }
+
+		/* ── Splat sidebar ── */
+		#splat-sidebar {
+			position: absolute;
+			top: 0; right: 0;
+			width: 220px; height: 100%;
+			z-index: 250;
+			background: rgba(10,10,18,0.88);
+			backdrop-filter: blur(12px);
+			border-left: 1px solid rgba(255,255,255,0.08);
+			display: flex; flex-direction: column;
+			transform: translateX(100%);
+			transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+			pointer-events: all;
+		}
+		#splat-sidebar.open { transform: translateX(0); }
+
+		#sidebar-header {
+			padding: 52px 14px 10px;
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.4);
+			border-bottom: 1px solid rgba(255,255,255,0.07);
 		}
 
-		body.nohf .nohf {
+		#splat-list {
+			flex: 1;
+			overflow-y: auto;
+			padding: 8px;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+		#splat-list::-webkit-scrollbar { width: 4px; }
+		#splat-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+		.splat-item {
+			display: flex; align-items: center; gap: 10px;
+			padding: 8px 10px;
+			border-radius: 8px;
+			cursor: pointer;
+			border: 1px solid transparent;
+			transition: background 0.15s, border-color 0.15s;
+		}
+		.splat-item:hover { background: rgba(255,255,255,0.07); }
+		.splat-item.active {
+			background: rgba(99,102,241,0.2);
+			border-color: rgba(99,102,241,0.5);
+		}
+		.splat-thumb {
+			width: 40px; height: 40px;
+			border-radius: 6px;
+			background: linear-gradient(135deg, #1e1e3a 0%, #2a2a50 100%);
+			display: flex; align-items: center; justify-content: center;
+			font-size: 18px;
+			flex-shrink: 0;
+		}
+		.splat-info { min-width: 0; }
+		.splat-name {
+			font-size: 12px;
+			font-weight: 600;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			color: rgba(255,255,255,0.88);
+		}
+		.splat-desc {
+			font-size: 10px;
+			color: rgba(255,255,255,0.35);
+			margin-top: 2px;
+		}
+
+		/* ── Help panel (bottom-left) ── */
+		#help-toggle {
+			position: absolute;
+			bottom: 14px; left: 14px;
+			z-index: 200;
+			width: 32px; height: 32px;
+			border-radius: 50%;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(20,20,30,0.75);
+			backdrop-filter: blur(8px);
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 14px; font-weight: 700;
+			color: rgba(255,255,255,0.6);
+			pointer-events: all;
+			transition: background 0.2s;
+		}
+		#help-toggle:hover { background: rgba(40,40,60,0.9); }
+
+		#help-panel {
+			position: absolute;
+			bottom: 54px; left: 14px;
+			z-index: 200;
+			width: 240px;
+			background: rgba(10,10,20,0.92);
+			backdrop-filter: blur(12px);
+			border: 1px solid rgba(255,255,255,0.1);
+			border-radius: 12px;
+			padding: 14px;
+			font-size: 11px;
+			line-height: 1.7;
+			color: rgba(255,255,255,0.7);
 			display: none;
+			pointer-events: all;
+		}
+		#help-panel.show { display: block; }
+		#help-panel h4 {
+			margin: 0 0 8px;
+			font-size: 11px;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.4);
+		}
+		#help-panel .help-row {
+			display: flex; justify-content: space-between; gap: 8px;
+		}
+		#help-panel .help-key {
+			background: rgba(255,255,255,0.1);
+			border-radius: 4px;
+			padding: 1px 5px;
+			font-family: monospace;
+			font-size: 10px;
+			color: #a5b4fc;
 		}
 
-		body.nohf #progress,
-		body.nohf .cube-face {
-			background: #ff9d0d;
+		/* ── Loading spinner ── */
+		.scene, #message {
+			position: absolute;
+			display: flex;
+			top: 0; right: 0; left: 0; bottom: 0;
+			z-index: 2;
+			height: 100%; width: 100%;
+			align-items: center;
+			justify-content: center;
 		}
+		#message {
+			font-weight: bold;
+			font-size: large;
+			color: #f87171;
+			pointer-events: none;
+		}
+		.cube-wrapper { transform-style: preserve-3d; }
+		.cube {
+			transform-style: preserve-3d;
+			transform: rotateX(45deg) rotateZ(45deg);
+			animation: rotation 2s infinite;
+		}
+		.cube-faces {
+			transform-style: preserve-3d;
+			height: 80px; width: 80px;
+			position: relative;
+			transform-origin: 0 0;
+			transform: translateX(0) translateY(0) translateZ(-40px);
+		}
+		.cube-face {
+			position: absolute;
+			inset: 0;
+			background: #6366f1;
+			border: solid 1px rgba(255,255,255,0.3);
+		}
+		.cube-face.top    { transform: translateZ(80px); }
+		.cube-face.front  { transform-origin: 0 50%; transform: rotateY(-90deg); }
+		.cube-face.back   { transform-origin: 0 50%; transform: rotateY(-90deg) translateZ(-80px); }
+		.cube-face.right  { transform-origin: 50% 0; transform: rotateX(-90deg) translateY(-80px); }
+		.cube-face.left   { transform-origin: 50% 0; transform: rotateX(-90deg) translateY(-80px) translateZ(80px); }
+		@keyframes rotation {
+			0%   { transform: rotateX(45deg) rotateY(0) rotateZ(45deg);  animation-timing-function: cubic-bezier(0.17,0.84,0.44,1); }
+			50%  { transform: rotateX(45deg) rotateY(0) rotateZ(225deg); animation-timing-function: cubic-bezier(0.76,0.05,0.86,0.06); }
+			100% { transform: rotateX(45deg) rotateY(0) rotateZ(405deg); animation-timing-function: cubic-bezier(0.17,0.84,0.44,1); }
+		}
+
+		/* ── Progress bar ── */
+		#progress {
+			position: absolute;
+			top: 0; left: 0;
+			height: 3px;
+			background: linear-gradient(to right, #6366f1, #a78bfa);
+			z-index: 999;
+			transition: width 0.1s ease-in-out;
+			border-radius: 0 2px 2px 0;
+			box-shadow: 0 0 8px rgba(99,102,241,0.6);
+		}
+
+		/* ── Mobile joysticks ── */
+		#joystick-left, #joystick-right {
+			display: none;
+			position: absolute;
+			bottom: 30px;
+			z-index: 400;
+			width: 110px; height: 110px;
+			border-radius: 50%;
+			background: rgba(255,255,255,0.06);
+			border: 1.5px solid rgba(255,255,255,0.18);
+			backdrop-filter: blur(4px);
+			touch-action: none;
+		}
+		#joystick-left  { left: 30px; }
+		#joystick-right { right: 30px; }
+
+		.joystick-knob {
+			position: absolute;
+			width: 44px; height: 44px;
+			border-radius: 50%;
+			background: rgba(99,102,241,0.75);
+			border: 2px solid rgba(255,255,255,0.4);
+			top: 50%; left: 50%;
+			transform: translate(-50%, -50%);
+			pointer-events: none;
+			box-shadow: 0 0 12px rgba(99,102,241,0.5);
+		}
+
+		.joystick-label {
+			position: absolute;
+			top: -22px; left: 50%;
+			transform: translateX(-50%);
+			font-size: 10px;
+			letter-spacing: 0.06em;
+			color: rgba(255,255,255,0.4);
+			text-transform: uppercase;
+			white-space: nowrap;
+			pointer-events: none;
+		}
+
+		@media (pointer: coarse) {
+			#joystick-left, #joystick-right { display: block; }
+			#help-toggle { bottom: 160px; }
+		}
+
+		body.nohf .nohf { display: none; }
+		body.nohf #progress, body.nohf .cube-face { background: #ff9d0d; }
 	</style>
 </head>
 
@@ -199,55 +328,36 @@
 	<script>
 		if (location.host.includes('hf.space')) document.body.classList.add('nohf');
 	</script>
-	<div id="info">
-		<h3 class="nohf">WebGL 3D Gaussian Splat Viewer - Free Cam</h3>
 
-		<details>
-			<summary>Click canvas and use WASD + Mouse to navigate (FPS style)</summary>
+	<canvas id="canvas"></canvas>
 
-			<div id="instructions">
-				═══════════════════════════════════
-				CONTROLS:
-				═══════════════════════════════════
-				
-				🎮 MOVEMENT (Free Cam):
-				• Click on canvas to lock mouse cursor
-				• W / A / S / D  - Move forward/left/backward/right
-				• Mouse movement - Look around
-				• SPACE - Move up
-				• CTRL - Move down
-				• SHIFT - Hold to run faster
-				• Press ESC - Release mouse cursor
-				
-				═══════════════════════════════════
-				
-				🎥 CAMERA PRESETS:
-				• Number keys 0-9 - Switch to pre-loaded camera views
-				• - / + keys - Cycle through cameras
-				
-				═══════════════════════════════════
-				
-				💾 OTHER:
-				• V key - Save current camera position to URL
-				• Drag & drop .ply file - Convert to .splat
-				• Drag & drop cameras.json - Load camera presets
-				
-				═══════════════════════════════════
-				
-				📱 TOUCH (Mobile):
-				• One finger - Orbit camera
-				• Two finger pinch - Zoom in/out
-				• Two finger rotate - Rotate camera
-				• Two finger pan - Move side-to-side and up-down
-			</div>
-
-		</details>
-
+	<!-- Top HUD -->
+	<div id="hud-top">
+		<span id="app-title" class="nohf">Splat Viewer</span>
+		<span id="camid"></span>
+		<span id="fps"></span>
 	</div>
 
+	<!-- Sidebar toggle -->
+	<button id="sidebar-toggle" title="Splat library">
+		<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2" rx="1"/><rect x="3" y="11" width="18" height="2" rx="1"/><rect x="3" y="17" width="18" height="2" rx="1"/></svg>
+	</button>
+
+	<!-- Splat sidebar -->
+	<div id="splat-sidebar">
+		<div id="sidebar-header">Scenes</div>
+		<div id="splat-list">
+			<!-- populated by JS -->
+		</div>
+	</div>
+
+	<!-- Progress bar -->
 	<div id="progress"></div>
 
+	<!-- Error message -->
 	<div id="message"></div>
+
+	<!-- Loading spinner -->
 	<div class="scene" id="spinner">
 		<div class="cube-wrapper">
 			<div class="cube">
@@ -262,14 +372,31 @@
 			</div>
 		</div>
 	</div>
-	<canvas id="canvas"></canvas>
 
-	<div id="quality">
-		<span id="fps"></span>
+	<!-- Help button + panel -->
+	<button id="help-toggle" title="Controls">?</button>
+	<div id="help-panel">
+		<h4>Controls</h4>
+		<div class="help-row"><span>Move</span><span><span class="help-key">W</span><span class="help-key">A</span><span class="help-key">S</span><span class="help-key">D</span></span></div>
+		<div class="help-row"><span>Up / Down</span><span><span class="help-key">Space</span> / <span class="help-key">Ctrl</span></span></div>
+		<div class="help-row"><span>Sprint</span><span><span class="help-key">Shift</span></span></div>
+		<div class="help-row"><span>Look</span><span>Click + Mouse</span></div>
+		<div class="help-row"><span>Release mouse</span><span><span class="help-key">Esc</span></span></div>
+		<div class="help-row"><span>Save view</span><span><span class="help-key">V</span></span></div>
+		<div class="help-row"><span>Cam presets</span><span><span class="help-key">0–9</span></span></div>
+		<div class="help-row" style="margin-top:6px;color:rgba(255,255,255,0.4);font-size:10px;"><span>Drop .ply / cameras.json to load</span></div>
 	</div>
-	<div id="caminfo">
-		<span id="camid"></span>
+
+	<!-- Mobile joysticks -->
+	<div id="joystick-left">
+		<div class="joystick-knob" id="knob-left"></div>
+		<div class="joystick-label">Move</div>
 	</div>
+	<div id="joystick-right">
+		<div class="joystick-knob" id="knob-right"></div>
+		<div class="joystick-label">Look</div>
+	</div>
+
 	<script src="main.js"></script>
 </body>
 
