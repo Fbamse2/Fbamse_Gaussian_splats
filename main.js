@@ -1,5 +1,5 @@
 ﻿// ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = false;
+const ENABLE_SAVE_VIEW = true;
 
 // ── Constants ────────────────────────────────────────────────────
 const ROW_LENGTH = 3 * 4 + 3 * 4 + 4 + 4; // 32 bytes per splat
@@ -724,7 +724,7 @@ async function main() {
             }
             const si = splatSizeLabel(splat.vertexCount);
             const sizeBadge = si ? `<div class="splat-size-badge ${si.cls}">${si.label}</div>` : "";
-            let resolvedUrl = ''; try { resolvedUrl = new URL(splat.url, splat.base || location.href).href; } catch {}
+            let resolvedUrl = ''; try { resolvedUrl = new URL(splat.splat || location.href).href; } catch {}
             const cacheBadge = resolvedUrl && cachedSplatUrls.has(resolvedUrl) ? `<div class="splat-cache-badge">✓ Cached</div>` : "";
             card.innerHTML = `<div class="splat-card-thumb">${thumb}</div>${sizeBadge}${cacheBadge}${activeBadge}<div class="splat-card-body"><div class="splat-card-name">${splat.name}</div><div class="splat-card-meta">${tagsHtml}</div></div>`;
             card.addEventListener("click", () => {
@@ -783,7 +783,7 @@ async function main() {
         vertexCount = 0; streamVC = 0;
         texAllocWidth = 0; texAllocHeight = 0;
 
-        const splatUrl   = new URL(splat.url, splat.base).href;
+        const splatUrl   = new URL(splat.splat).href;
         spinnerEl.style.display  = "";
         progressEl.style.display = "";
         progressEl.style.width   = "0%";
