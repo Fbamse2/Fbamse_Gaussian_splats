@@ -1,5 +1,5 @@
 // ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = false; // Disable to prevent saving camera state to localStorage
+const ENABLE_SAVE_VIEW = true; // Disable to prevent saving camera state to localStorage
 
 
 // Global vertexCount for all code paths
@@ -15,16 +15,26 @@ if (savedSplatIndex !== null && !isNaN(Number(savedSplatIndex))) {
 }
 
 let splatLibrary = [];
+let splatCategories = {};
 
 // Load splatLibrary from external JSON before running the rest of the app
 async function loadSplatLibraryAndStart() {
     try {
         const resp = await fetch('splats.json');
         if (!resp.ok) throw new Error('Failed to load splats.json');
-        splatLibrary = await resp.json();
+        const data = await resp.json();
+        if (Array.isArray(data)) {
+            // Legacy flat array
+            splatLibrary = data;
+            splatCategories = {};
+        } else {
+            splatLibrary = data.splats || [];
+            splatCategories = data.categories || {};
+        }
     } catch (e) {
         console.error('Error loading splats.json:', e);
         splatLibrary = [];
+        splatCategories = {};
     }
     // Now start the main app logic
     main();
@@ -876,8 +886,9 @@ async function main() {
     }
 
     let overlayOpen = false;
-    let activeTag = "all";
-    let activeYear = "all";
+    // Multi-select filters: Set of active tag strings
+    // Filter logic: AND across categories, OR within a category
+    let activeFilters = new Set();
 
     function openOverlay() {
         overlayOpen = true;
@@ -893,43 +904,161 @@ async function main() {
         overlayEl.classList.remove("open");
     }
 
-    function getAllTags() {
-        const set = new Set();
-        splatLibrary.forEach(s => (s.tags || []).forEach(t => set.add(t)));
-        return [...set].sort();
-    }
-
-    function getAllYears() {
-        // Removed: getAllYears, year is now a tag
-        return [];
-    }
+    // Track which category groups are expanded (see more/less)
+    const expandedGroups = new Set();
+    let filterPanelOpen = false;
+    const FILTER_INITIAL_COUNT = 4; // tags shown before "+ more"
 
     function renderFilters() {
-        const tags = getAllTags();
         overlayFilters.innerHTML = "";
 
-        // Category chips
-        const allChip = document.createElement("button");
-        allChip.className = "filter-chip" + (activeTag === "all" ? " active" : "");
-        allChip.textContent = "Alle";
-        allChip.addEventListener("click", () => { activeTag = "all"; renderFilters(); renderSplatGrid(); });
-        overlayFilters.appendChild(allChip);
+        // ── Toggle bar (always visible) ──────────────────────────
+        const bar = document.createElement("div");
+        bar.className = "filter-bar";
 
-        tags.forEach(tag => {
-            const chip = document.createElement("button");
-            chip.className = "filter-chip" + (activeTag === tag ? " active" : "");
-            chip.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
-            chip.addEventListener("click", () => { activeTag = tag; renderFilters(); renderSplatGrid(); });
-            overlayFilters.appendChild(chip);
+        const arrow = document.createElement("span");
+        arrow.className = "filter-bar-arrow" + (filterPanelOpen ? " open" : "");
+        arrow.textContent = "▶";
+        bar.appendChild(arrow);
+
+        const barLabel = document.createElement("span");
+        barLabel.className = "filter-bar-label";
+        barLabel.textContent = "Filter";
+        bar.appendChild(barLabel);
+
+        // Active filter summary chips
+        const activeChips = document.createElement("div");
+        activeChips.className = "filter-active-chips";
+        activeFilters.forEach(tag => {
+            const chip = document.createElement("span");
+            chip.className = "filter-active-chip";
+            chip.textContent = "× " + tag;
+            chip.addEventListener("click", (e) => {
+                e.stopPropagation();
+                activeFilters.delete(tag);
+                renderFilters();
+                renderSplatGrid();
+            });
+            activeChips.appendChild(chip);
         });
+        bar.appendChild(activeChips);
+
+        if (activeFilters.size > 0) {
+            const clearBtn = document.createElement("button");
+            clearBtn.className = "filter-clear-btn";
+            clearBtn.textContent = "Ryd";
+            clearBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                activeFilters.clear();
+                renderFilters();
+                renderSplatGrid();
+            });
+            bar.appendChild(clearBtn);
+        }
+
+        bar.addEventListener("click", () => {
+            filterPanelOpen = !filterPanelOpen;
+            renderFilters();
+        });
+        overlayFilters.appendChild(bar);
+
+        // ── Expandable panel ─────────────────────────────────────
+        const panel = document.createElement("div");
+        panel.className = "filter-panel" + (filterPanelOpen ? " open" : "");
+
+        // "Alle" chip at top of panel
+        const topRow = document.createElement("div");
+        topRow.className = "filter-top-row";
+        const resetBtn = document.createElement("button");
+        resetBtn.className = "filter-chip" + (activeFilters.size === 0 ? " active" : "");
+        resetBtn.textContent = "Alle";
+        resetBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            activeFilters.clear();
+            renderFilters();
+            renderSplatGrid();
+        });
+        topRow.appendChild(resetBtn);
+        panel.appendChild(topRow);
+
+        // One row per category — no collapse arrow, just see-more/less
+        Object.entries(splatCategories).forEach(([key, cat]) => {
+            const tags = Array.isArray(cat) ? cat : (cat.tags || []);
+            const label = Array.isArray(cat) ? key : (cat.label || key);
+            if (tags.length === 0) return;
+
+            const isExpanded = expandedGroups.has(key);
+            const visibleTags = isExpanded ? tags : tags.slice(0, FILTER_INITIAL_COUNT);
+            const hiddenCount = tags.length - FILTER_INITIAL_COUNT;
+
+            const group = document.createElement("div");
+            group.className = "filter-group";
+
+            const labelEl = document.createElement("span");
+            labelEl.className = "filter-group-label";
+            labelEl.textContent = label;
+            group.appendChild(labelEl);
+
+            const chips = document.createElement("div");
+            chips.className = "filter-group-chips open";
+
+            visibleTags.forEach(tag => {
+                const chip = document.createElement("button");
+                chip.className = "filter-chip" + (activeFilters.has(tag) ? " active" : "");
+                chip.textContent = tag;
+                chip.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    if (activeFilters.has(tag)) activeFilters.delete(tag);
+                    else activeFilters.add(tag);
+                    renderFilters();
+                    renderSplatGrid();
+                });
+                chips.appendChild(chip);
+            });
+
+            // See more / less button
+            if (hiddenCount > 0 && !isExpanded) {
+                const moreBtn = document.createElement("button");
+                moreBtn.className = "filter-more-btn";
+                moreBtn.textContent = `+ ${hiddenCount} mere`;
+                moreBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    expandedGroups.add(key);
+                    renderFilters();
+                });
+                chips.appendChild(moreBtn);
+            } else if (isExpanded && tags.length > FILTER_INITIAL_COUNT) {
+                const lessBtn = document.createElement("button");
+                lessBtn.className = "filter-more-btn";
+                lessBtn.textContent = "mindre";
+                lessBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    expandedGroups.delete(key);
+                    renderFilters();
+                });
+                chips.appendChild(lessBtn);
+            }
+
+            group.appendChild(chips);
+            panel.appendChild(group);
+        });
+
+        overlayFilters.appendChild(panel);
     }
 
     function renderSplatGrid() {
         splatGridEl.innerHTML = "";
 
-        const filtered = splatLibrary.filter((s, i) => {
-            const tagOk = activeTag === "all" || (s.tags || []).includes(activeTag);
-            return tagOk;
+        const filtered = splatLibrary.filter(s => {
+            if (activeFilters.size === 0) return true;
+            // AND across categories, OR within a category
+            for (const [key, cat] of Object.entries(splatCategories)) {
+                const catTags = Array.isArray(cat) ? cat : (cat.tags || []);
+                const activeCatTags = catTags.filter(t => activeFilters.has(t));
+                if (activeCatTags.length === 0) continue; // no filter active for this category
+                if (!activeCatTags.some(t => (s.tags || []).includes(t))) return false;
+            }
+            return true;
         });
 
         overlayCountEl.textContent = filtered.length > 0 ? `(${filtered.length})` : "";

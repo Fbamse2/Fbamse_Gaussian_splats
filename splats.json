@@ -1,4 +1,11 @@
-[
+{
+    "categories": {
+        "year":     { "label": "År",    "tags": ["2025", "2026"] },
+        "location": { "label": "Sted",  "tags": ["Greve", "Brøndby", "Albertslund", "Hvidovre"] },
+        "type":     { "label": "Type",  "tags": ["Bjerg", "Havn", "Blomst", "Winter"] },
+        "extra":    { "label": "Ekstra","tags": ["VCT Drone Tur"] }
+    },
+    "splats": [
     {
         "name": "Greve Havn",
         "desc": "winter 2026, Denmark",
@@ -133,5 +140,30 @@
             0
         ],
         "vertexCount": 1858649
+    },
+    {
+        "name": "Hvidovre Blomst",
+        "desc": "2026, Denmark",
+        "emoji": "🌸",
+        "tags": [
+            "2026",
+            "Blomst",
+            "Hvidovre"
+        ],
+        "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/Hvidovre_Blomst_Splat_83ac102c-f7af-48db-a9ac-9381f04b0b57.png",
+        "url": "Hvidovre_Blomst_Splat_83ac102c-f7af-48db-a9ac-9381f04b0b57.splat",
+        "base": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/",
+        "cameraPosition": [
+            2.13,
+            -2.34,
+            2.01
+        ],
+        "cameraRotation": [
+            -2.38,
+            -0.69,
+            0
+        ],
+        "vertexCount": 1514695
     }
-]
+    ]
+}

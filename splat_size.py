@@ -79,7 +79,15 @@ def main():
         sys.exit(1)
 
     with open(json_path, encoding="utf-8") as f:
-        splats = json.load(f)
+        data = json.load(f)
+
+    # Support both legacy flat array and new {categories, splats} format
+    if isinstance(data, list):
+        splats = data
+        is_wrapped = False
+    else:
+        splats = data.get("splats", [])
+        is_wrapped = True
 
     changed = False
     for splat in splats:
@@ -112,7 +120,7 @@ def main():
         print("\n[dry-run] No changes written.")
     elif changed:
         with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(splats, f, ensure_ascii=False, indent=4)
+            json.dump(data if is_wrapped else splats, f, ensure_ascii=False, indent=4)
         print(f"\n✓ Updated {json_path}")
     else:
         print(f"\n✓ {json_path} already up-to-date, nothing written.")
