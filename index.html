@@ -131,7 +131,7 @@
 			   transition: opacity 0.22s ease;
 			   height: 100svh;
 			   width: 100vw;
-			   overflow: hidden;
+			   /* overflow: hidden;  Remove to allow child scroll */
 		   }
 		   #splat-overlay.open {
 			   opacity: 1;
@@ -437,7 +437,7 @@
 			   justify-content: center;
 			   -webkit-overflow-scrolling: touch;
 		   }
-		#splat-grid::-webkit-scrollbar { width: 6px; }
+		#splat-grid::-webkit-scrollbar { width: 14px; }
 		#splat-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 3px; }
 
 		   .splat-card {
@@ -872,6 +872,182 @@
 
 		body.nohf .nohf { display: none; }
 		body.nohf #progress, body.nohf .cube-face { background: #ff9d0d; }
+
+		/* ── Camera captures button ── */
+		#presets-btn {
+			position: relative;
+			z-index: 510;
+			width: 36px; height: 36px;
+			border-radius: 10px;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(20,20,30,0.75);
+			backdrop-filter: blur(8px);
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			pointer-events: all;
+			transition: background 0.2s;
+		}
+		#presets-btn:hover { background: rgba(40,40,60,0.85); }
+		#presets-btn svg { width: 18px; height: 18px; fill: none; stroke: #ccc; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+
+		/* ── Camera captures overlay ── */
+		#presets-overlay {
+			position: fixed;
+			top: 0; left: 0; right: 0; bottom: 0;
+			background: rgba(10,10,20,0.96);
+			z-index: 600;
+			display: none;
+			flex-direction: column;
+			backdrop-filter: blur(12px);
+		}
+		#presets-overlay.open { display: flex; }
+
+		#presets-header {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 14px 16px;
+			border-bottom: 1px solid rgba(255,255,255,0.1);
+			flex-shrink: 0;
+		}
+		#presets-close {
+			width: 34px; height: 34px;
+			border-radius: 8px;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(255,255,255,0.08);
+			color: #fff;
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 14px;
+			flex-shrink: 0;
+		}
+		#presets-close:hover { background: rgba(255,255,255,0.16); }
+		#presets-title {
+			font-size: 14px;
+			font-weight: 600;
+			color: rgba(255,255,255,0.85);
+			letter-spacing: 0.04em;
+		}
+		#presets-count {
+			font-size: 12px;
+			color: rgba(255,255,255,0.4);
+		}
+		#presets-master-btn {
+			margin-left: auto;
+			padding: 5px 12px;
+			border-radius: 8px;
+			border: 1px solid rgba(255,255,255,0.15);
+			background: rgba(255,255,255,0.07);
+			color: rgba(255,255,255,0.6);
+			cursor: pointer;
+			font-size: 13px;
+			transition: background 0.2s, border-color 0.2s;
+		}
+		#presets-master-btn:hover { background: rgba(255,255,255,0.12); }
+		#presets-master-btn.active { background: rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.5); color: #fbbf24; }
+
+		#presets-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+			align-items: start;
+			gap: 14px;
+			padding: 18px;
+			overflow-y: auto;
+			flex: 1 1 0;
+		}
+		#presets-grid::-webkit-scrollbar { width: 14px; }
+		#presets-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 3px; }
+
+		.preset-card {
+			background: rgba(255,255,255,0.05);
+			border-radius: 10px;
+			overflow: hidden;
+			border: 1px solid rgba(255,255,255,0.09);
+			transition: border-color 0.2s, transform 0.15s;
+		}
+		.preset-card:hover { border-color: rgba(99,102,241,0.45); transform: translateY(-1px); }
+		.preset-card-thumb {
+			width: 100%;
+			aspect-ratio: 16/9;
+			background: #0c0c18;
+			overflow: hidden;
+		}
+		.preset-card-thumb img {
+			width: 100%; height: 100%;
+			object-fit: cover;
+			display: block;
+			transition: transform 0.2s;
+		}
+		.preset-card:hover .preset-card-thumb img { transform: scale(1.04); }
+		.preset-card-footer {
+			padding: 8px 10px 10px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+		}
+		.preset-card-time {
+			font-size: 11px;
+			color: rgba(255,255,255,0.4);
+			flex: 1;
+			min-width: 0;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.preset-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+		.preset-goto-btn {
+			background: rgba(99,102,241,0.2);
+			border: 1px solid rgba(99,102,241,0.4);
+			color: #a5b4fc;
+			border-radius: 6px;
+			padding: 3px 10px;
+			font-size: 11px;
+			cursor: pointer;
+			transition: background 0.15s;
+		}
+		.preset-goto-btn:hover { background: rgba(99,102,241,0.38); }
+		.preset-delete-btn {
+			background: rgba(239,68,68,0.15);
+			border: 1px solid rgba(239,68,68,0.35);
+			color: #fca5a5;
+			border-radius: 6px;
+			padding: 3px 10px;
+			font-size: 11px;
+			cursor: pointer;
+			display: none;
+			transition: background 0.15s;
+		}
+		.preset-delete-btn.visible { display: inline-block; }
+		.preset-delete-btn:hover { background: rgba(239,68,68,0.35); }
+		#presets-empty {
+			grid-column: 1 / -1;
+			text-align: center;
+			color: rgba(255,255,255,0.25);
+			padding: 80px 20px;
+			font-size: 14px;
+		}
+
+		/* ── Toast notification ── */
+		.splat-toast {
+			position: fixed;
+			bottom: 80px;
+			left: 50%;
+			transform: translateX(-50%) translateY(16px);
+			background: rgba(20,20,36,0.97);
+			border: 1px solid rgba(255,255,255,0.13);
+			color: rgba(255,255,255,0.9);
+			padding: 9px 22px;
+			border-radius: 20px;
+			font-size: 13px;
+			z-index: 9999;
+			opacity: 0;
+			transition: opacity 0.2s, transform 0.2s;
+			pointer-events: none;
+			white-space: nowrap;
+		}
+		.splat-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+		.splat-toast.toast-error { border-color: rgba(239,68,68,0.35); background: rgba(40,10,10,0.97); color: #fca5a5; }
 	</style>
 </head>
 
@@ -885,8 +1061,11 @@
 	<!-- Top HUD -->
 	<div id="hud-top">
 		<div id="hud-left">
-			<button id="splat-browser-btn" title="Browse scenes">
+			<button id="splat-browser-btn" title="Browse scenes (B)">
 				<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+			</button>
+			<button id="presets-btn" title="Camera captures (K)">
+				<svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
 			</button>
 			<span id="app-title" class="nohf">Splat Viewer</span>
 			<span id="version" class="nohf"><h6>v5.0.0</h6></span>
@@ -898,40 +1077,53 @@
 	</div>
 
 	<!-- Full-page splat browser overlay -->
-	<div id="splat-overlay">
-		<div id="overlay-header">
-			<button id="overlay-close" title="Close">✕</button>
-			<span id="overlay-title">Gaussian Splats [Scenes]</span>
-			<span id="overlay-count"></span>
-			<button id="overlay-map-btn" title="World map">🗺️</button>
-			<button id="overlay-settings-btn" title="Settings">⚙️</button>
+	   <div id="splat-overlay">
+		   <div id="overlay-header">
+			   <button id="overlay-close" title="Close">✕</button>
+			   <span id="overlay-title">Gaussian Splats [Scenes]</span>
+			   <span id="overlay-count"></span>
+			   <button id="overlay-map-btn" title="World map">🗺️</button>
+			   <button id="overlay-settings-btn" title="Settings">⚙️</button>
+		   </div>
+		   <div id="settings-dropdown">
+			   <div class="settings-title">Cache</div>
+			   <div class="settings-row">
+				   <span class="settings-label">Splat data (session)</span>
+				   <button id="clear-cache-btn">Clear all</button>
+			   </div>
+		   </div>
+		   <div id="overlay-search-bar">
+			   <div id="search-wrap">
+				   <span id="search-icon">🔍</span>
+				   <input id="overlay-search" type="search" placeholder="Søg scener…" autocomplete="off" spellcheck="false" />
+			   </div>
+			   <select id="sort-select" title="Sort order">
+				   <option value="default">Standard</option>
+				   <option value="name">Navn A–Z</option>
+				   <option value="size-desc">Størst først</option>
+				   <option value="size-asc">Mindst først</option>
+				   <option value="year-desc">Nyeste først</option>
+			   </select>
+		   </div>
+		   <div id="overlay-filters">
+			   <!-- populated by JS -->
+		   </div>
+		   <div style="flex:1 1 0; min-height:0; display:flex; flex-direction:column;">
+			   <div id="splat-grid">
+				   <!-- populated by JS -->
+			   </div>
+		   </div>
+	   </div>
+
+	<!-- Camera captures overlay -->
+	<div id="presets-overlay">
+		<div id="presets-header">
+			<button id="presets-close" title="Close">✕</button>
+			<span id="presets-title">Camera Captures</span>
+			<span id="presets-count"></span>
+			<button id="presets-master-btn" title="Enable delete mode">🔒</button>
 		</div>
-		<div id="settings-dropdown">
-			<div class="settings-title">Cache</div>
-			<div class="settings-row">
-				<span class="settings-label">Splat data (session)</span>
-				<button id="clear-cache-btn">Clear all</button>
-			</div>
-		</div>
-		<div id="overlay-search-bar">
-			<div id="search-wrap">
-				<span id="search-icon">🔍</span>
-				<input id="overlay-search" type="search" placeholder="Søg scener…" autocomplete="off" spellcheck="false" />
-			</div>
-			<select id="sort-select" title="Sort order">
-				<option value="default">Standard</option>
-				<option value="name">Navn A–Z</option>
-				<option value="size-desc">Størst først</option>
-				<option value="size-asc">Mindst først</option>
-				<option value="year-desc">Nyeste først</option>
-			</select>
-		</div>
-		<div id="overlay-filters">
-			<!-- populated by JS -->
-		</div>
-		<div id="splat-grid">
-			<!-- populated by JS -->
-		</div>
+		<div id="presets-grid"><!-- populated by JS --></div>
 	</div>
 
 	<!-- Map overlay -->
@@ -976,6 +1168,8 @@
 		<div class="help-row"><span>Look</span><span>Click + Mouse</span></div>
 		<div class="help-row"><span>Release mouse</span><span><span class="help-key">Esc</span></span></div>
 		<div class="help-row"><span>Browse scenes</span><span><span class="help-key">B</span></span></div>
+		<div class="help-row"><span>Capture view</span><span><span class="help-key">C</span></span></div>
+		<div class="help-row"><span>View captures</span><span><span class="help-key">K</span></span></div>
 		<div id="help-save-view-row" class="help-row"><span>Save view</span><span><span class="help-key">V</span></span></div>
 		<div class="help-row" style="margin-top:6px;color:rgba(255,255,255,0.4);font-size:10px;"><span>Drop .ply to load</span></div>
 	</div>

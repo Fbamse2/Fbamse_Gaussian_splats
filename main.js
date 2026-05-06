@@ -1,6 +1,19 @@
 ﻿// ── Feature toggles ─────────────────────────────────────────────
 const ENABLE_SAVE_VIEW = false;
 
+// ── Master delete code (hardcoded — change this to your own secret) ──
+const MASTER_DELETE_CODE = "fbamse";  // only you know this
+
+// ── Toast notification ───────────────────────────────────────────
+function showToast(message, type = 'ok') {
+    const t = document.createElement('div');
+    t.className = 'splat-toast' + (type === 'error' ? ' toast-error' : '');
+    t.textContent = message;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('visible'));
+    setTimeout(() => { t.classList.remove('visible'); setTimeout(() => t.remove(), 300); }, 2500);
+}
+
 // ── Constants ────────────────────────────────────────────────────
 const ROW_LENGTH = 3 * 4 + 3 * 4 + 4 + 4; // 32 bytes per splat
 
@@ -605,6 +618,15 @@ async function main() {
         if (e.code === "KeyB" && !e.target.matches("input,textarea,select")) {
             overlayOpen ? closeOverlay() : openOverlay();
         }
+        if (e.code === "KeyK" && !e.target.matches("input,textarea,select")) {
+            presetsOpen ? closePresetsGallery() : openPresetsGallery();
+        }
+        if (e.code === "KeyC" && !e.target.matches("input,textarea,select")) {
+            capturePreset();
+        }
+        if (e.code === "Escape" && presetsOpen) {
+            closePresetsGallery();
+        }
         if (ENABLE_SAVE_VIEW && e.code === "KeyV") {
             isSaving = true;
             const pos = cameraPosition.map(p => Math.round(p*100)/100);
@@ -616,7 +638,18 @@ async function main() {
     });
     window.addEventListener("keyup",  (e) => activeKeys.delete(e.code));
     window.addEventListener("blur",   ()  => activeKeys.clear());
-    window.addEventListener("wheel",  (e) => e.preventDefault(), { passive: false });
+    // Only prevent scroll outside overlay, allow scroll in overlay/grid
+    window.addEventListener("wheel", (e) => {
+        const overlay = document.getElementById("splat-overlay");
+        const grid = document.getElementById("splat-grid");
+        // Only prevent scroll if overlay is closed or mouse is NOT over grid
+        if (overlay && overlay.classList.contains("open") && grid && e.target.closest && e.target.closest("#splat-grid")) {
+            // Let the event bubble, allow native scroll
+            return;
+        }
+        // Otherwise, prevent scroll (main canvas etc)
+        e.preventDefault();
+    }, { passive: false });
 
     // ── Overlay ───────────────────────────────────────────────
     const overlayEl      = document.getElementById("splat-overlay");
@@ -633,7 +666,139 @@ async function main() {
     let searchQuery   = "";
     let sortOrder     = "default";
 
-    function openOverlay()  { overlayOpen = true;  overlayEl.classList.add("open"); if (document.pointerLockElement) document.exitPointerLock(); refreshCacheState(); renderFilters(); renderSplatGrid(); }
+    // ── Camera Preset Gallery ──────────────────────────────────
+    let presetsOpen    = false;
+    let masterMode     = false;
+    let pendingCapture = false;
+
+    const presetsOverlay  = document.getElementById('presets-overlay');
+    const presetsBtn      = document.getElementById('presets-btn');
+    const presetsCloseBtn = document.getElementById('presets-close');
+    const presetsGridEl   = document.getElementById('presets-grid');
+    const presetsCountEl  = document.getElementById('presets-count');
+    const presetsTitleEl  = document.getElementById('presets-title');
+    const masterBtn       = document.getElementById('presets-master-btn');
+
+    function getSplatPresetKey() {
+        const splat = splatLibrary[activeSplatIndex];
+        return splat && splat.splat ? 'cameraPresets_' + splat.splat : null;
+    }
+    function _loadPresets(key) {
+        try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+    }
+    function _savePresets(key, presets) {
+        try { localStorage.setItem(key, JSON.stringify(presets)); }
+        catch { showToast('Failed to save capture', 'error'); }
+    }
+    function _doCapture() {
+        const key = getSplatPresetKey();
+        if (!key) { showToast('No splat loaded', 'error'); return; }
+        let thumbnail = '';
+        try { thumbnail = canvas.toDataURL('image/jpeg', 0.4); } catch {}
+        const preset = { thumbnail, timestamp: Date.now(), position: [...cameraPosition], rotation: [...cameraRotation] };
+        const presets = _loadPresets(key);
+        presets.push(preset);
+        _savePresets(key, presets);
+        showToast('Capture saved (' + presets.length + ' total)');
+        if (presetsOpen) renderPresetsGallery();
+    }
+    function capturePreset() {
+        if (vertexCount === 0) { showToast('Nothing loaded yet', 'error'); return; }
+        pendingCapture = true;
+    }
+    function _fmtTime(ts) {
+        const d = new Date(ts);
+        return d.toLocaleDateString('da-DK', { day:'2-digit', month:'2-digit', year:'2-digit' })
+             + ' ' + d.toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+    function renderPresetsGallery() {
+        const key     = getSplatPresetKey();
+        const presets = key ? _loadPresets(key) : [];
+        const splat   = splatLibrary[activeSplatIndex];
+        presetsTitleEl.textContent  = 'Captures' + (splat ? ': ' + splat.name : '');
+        presetsCountEl.textContent  = presets.length ? '(' + presets.length + ')' : '';
+        masterBtn.className         = masterMode ? 'active' : '';
+        masterBtn.textContent       = masterMode ? '\uD83D\uDD13' : '\uD83D\uDD12';
+        presetsGridEl.innerHTML     = '';
+        if (!presets.length) {
+            const empty = document.createElement('div');
+            empty.id = 'presets-empty';
+            empty.textContent = 'No captures yet. Press C to capture the current view.';
+            presetsGridEl.appendChild(empty);
+            return;
+        }
+        // Newest first
+        [...presets].reverse().forEach((preset, ri) => {
+            const realIndex = presets.length - 1 - ri;
+            const card = document.createElement('div');
+            card.className = 'preset-card';
+            const imgHtml = preset.thumbnail
+                ? `<img src="${preset.thumbnail}" alt="Capture" />`
+                : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.2);font-size:12px;">No preview</div>`;
+            card.innerHTML = `
+                <div class="preset-card-thumb">${imgHtml}</div>
+                <div class="preset-card-footer">
+                    <span class="preset-card-time">${_fmtTime(preset.timestamp)}</span>
+                    <div class="preset-card-actions">
+                        <button class="preset-goto-btn">Go to</button>
+                        <button class="preset-delete-btn${masterMode ? ' visible' : ''}">Delete</button>
+                    </div>
+                </div>`;
+            card.querySelector('.preset-goto-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                cameraPosition = [...preset.position];
+                cameraRotation = [...preset.rotation];
+                viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
+                saveCameraState();
+                viewDirty = true;
+                closePresetsGallery();
+                showToast('Moved to capture');
+            });
+            card.querySelector('.preset-delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!confirm('Delete this capture?')) return;
+                const latest = _loadPresets(key);
+                latest.splice(realIndex, 1);
+                _savePresets(key, latest);
+                showToast('Capture deleted');
+                renderPresetsGallery();
+            });
+            presetsGridEl.appendChild(card);
+        });
+    }
+    function openPresetsGallery() {
+        if (overlayOpen) closeOverlay();
+        presetsOpen = true;
+        presetsOverlay.classList.add('open');
+        if (document.pointerLockElement) document.exitPointerLock();
+        renderPresetsGallery();
+    }
+    function closePresetsGallery() {
+        presetsOpen = false;
+        presetsOverlay.classList.remove('open');
+    }
+
+    presetsBtn.addEventListener('click', () => presetsOpen ? closePresetsGallery() : openPresetsGallery());
+    presetsCloseBtn.addEventListener('click', closePresetsGallery);
+    masterBtn.addEventListener('click', () => {
+        if (masterMode) {
+            masterMode = false;
+            renderPresetsGallery();
+            showToast('Delete mode disabled');
+        } else {
+            const code = prompt('Enter master code to enable delete mode:');
+            if (code === null) return;
+            if (code === MASTER_DELETE_CODE) {
+                masterMode = true;
+                renderPresetsGallery();
+                showToast('Delete mode enabled \uD83D\uDD13');
+            } else {
+                showToast('Incorrect code', 'error');
+            }
+        }
+    });
+
+    function openOverlay()  { if (presetsOpen) closePresetsGallery(); overlayOpen = true;  overlayEl.classList.add("open"); if (document.pointerLockElement) document.exitPointerLock(); refreshCacheState(); renderFilters(); renderSplatGrid(); }
     function closeOverlay() { overlayOpen = false; overlayEl.classList.remove("open"); }
 
     // ── Search + Sort ─────────────────────────────────────────
@@ -815,7 +980,8 @@ async function main() {
         const gen = ++loadGen;
 
         if (splat.cameraPosition && splat.cameraRotation) {
-            cameraPosition = [...splat.cameraPosition];
+            const _sc = splat.scale ?? 1;
+            cameraPosition = splat.cameraPosition.map(v => v * _sc);
             cameraRotation = [...splat.cameraRotation];
             viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
             saveCameraState();
@@ -876,6 +1042,18 @@ async function main() {
         progressEl.classList.add("indeterminate");
         viewDirty = true; // ensure view is sent to worker for initial sort
 
+        // Apply per-splat scale to positions and gaussian sizes
+        const splatScale = splat.scale ?? 1;
+        if (splatScale !== 1) {
+            const fv = new Float32Array(arrayBuf);
+            const vc_s = (arrayBuf.byteLength / rowLength) | 0;
+            for (let i = 0; i < vc_s; i++) {
+                const b = i * 8;
+                fv[b] *= splatScale; fv[b+1] *= splatScale; fv[b+2] *= splatScale; // position
+                fv[b+3] *= splatScale; fv[b+4] *= splatScale; fv[b+5] *= splatScale; // gaussian size
+            }
+        }
+
         const vc = (arrayBuf.byteLength / rowLength) | 0;
         streamVC = vc;
         splatData = new Uint8Array(arrayBuf);
@@ -924,7 +1102,6 @@ async function main() {
 
     // ── Render loop ───────────────────────────────────────────
     let lastFrame = 0, avgFps = 0;
-    const moveSpeed = 0.1;
 
     const frame = (now) => {
         gl.useProgram(program);
@@ -933,7 +1110,10 @@ async function main() {
         const cp = Math.cos(pitch), sp = Math.sin(pitch);
         const fx = -sy*cp, fz = -cy*cp, fy = sp;
         const rx = cy, rz = -sy;
-        const speed = moveSpeed * (activeKeys.has("ShiftLeft") ? 2 : 1);
+        const activeSplat = splatLibrary[activeSplatIndex];
+        const moveSpeed  = activeSplat?.speed ?? 0.1;
+        const sprintMult = activeSplat?.sprintMultiplier ?? 2;
+        const speed = moveSpeed * (activeKeys.has("ShiftLeft") ? sprintMult : 1);
         let dx = 0, dy = 0, dz = 0;
         if (activeKeys.has("KeyW"))        { dx -= fx*speed; dz -= fz*speed; dy -= fy*speed; }
         if (activeKeys.has("KeyS"))        { dx += fx*speed; dz += fz*speed; dy += fy*speed; }
@@ -966,6 +1146,8 @@ async function main() {
             gl.uniformMatrix4fv(u_view, false, viewMatrix);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+            // Capture current frame if requested (must happen immediately after draw)
+            if (pendingCapture) { pendingCapture = false; _doCapture(); }
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             spinnerEl.style.display = "";
@@ -980,7 +1162,9 @@ async function main() {
     if (activeSplatIndex >= 0 && activeSplatIndex < splatLibrary.length) {
         const splat = splatLibrary[activeSplatIndex];
         if (!savedCamera && splat.cameraPosition && splat.cameraRotation) {
-            cameraPosition = [...splat.cameraPosition]; cameraRotation = [...splat.cameraRotation];
+            const _sc = splat.scale ?? 1;
+            cameraPosition = splat.cameraPosition.map(v => v * _sc);
+            cameraRotation = [...splat.cameraRotation];
             viewMatrix = createViewMatrix(cameraPosition, cameraRotation);
         }
         const s = { ...splat }; delete s.cameraPosition; delete s.cameraRotation;

@@ -59,7 +59,10 @@
             ],
             "lat": 55.592818,
             "lng": 12.354206,
-            "vertexCount": 1183407
+            "vertexCount": 1183407,
+            "speed": 0.2,
+            "sprintMultiplier": 3,
+            "scale": 1
         },
         {
             "name": "Brøndby Havn",
@@ -86,7 +89,10 @@
             ],
             "lat": 55.609123,
             "lng": 12.443446,
-            "vertexCount": 1734477
+            "vertexCount": 1734477,
+            "speed": 0.2,
+            "sprintMultiplier": 3,
+            "scale": 1.0
         },
         {
             "name": "Brøndby Bjerg",
@@ -113,7 +119,10 @@
             ],
             "lat": 55.612047,
             "lng": 12.447471,
-            "vertexCount": 1011466
+            "vertexCount": 1011466,
+            "speed": 0.2,
+            "sprintMultiplier": 3,
+            "scale": 1.0
         },
         {
             "name": "Albertslund Bjerg",
@@ -139,7 +148,10 @@
             ],
             "lat": 55.68893348356224,
             "lng": 12.363380347560003,
-            "vertexCount": 2723614
+            "vertexCount": 2723614,
+            "speed": 0.25,
+            "sprintMultiplier": 3,
+            "scale": 1.0
         },
         {
             "name": "Hvidovre Blomst",
@@ -162,7 +174,10 @@
                 -0.72,
                 0
             ],
-            "vertexCount": 1858649
+            "vertexCount": 1858649,
+            "speed": 0.015,
+            "sprintMultiplier": 2,
+            "scale": 1.0
         },
         {
             "name": "Hvidovre Blomst",
@@ -185,7 +200,10 @@
                 -0.14,
                 0
             ],
-            "vertexCount": 1514695
+            "vertexCount": 1514695,
+            "speed": 0.015,
+            "sprintMultiplier": 2,
+            "scale": 1.0
         },
         {
             "name": "Brøndby Strandcafeen",
@@ -211,7 +229,10 @@
             ],
             "lat": 55.61389656618426,
             "lng": 12.422087403464355,
-            "vertexCount": 1382866
+            "vertexCount": 1382866,
+            "speed": 0.15,
+            "sprintMultiplier": 3,
+            "scale": 1.0
         }
     ]
 }
