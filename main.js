@@ -1,5 +1,5 @@
 ﻿// ── Feature toggles ─────────────────────────────────────────────
-const ENABLE_SAVE_VIEW = true;
+const ENABLE_SAVE_VIEW = false;
 
 // ── Constants ────────────────────────────────────────────────────
 const ROW_LENGTH = 3 * 4 + 3 * 4 + 4 + 4; // 32 bytes per splat
@@ -567,6 +567,8 @@ async function main() {
             // Sort done — hide the loading bar and allow next view to be sent
             progressEl.classList.remove("indeterminate");
             progressEl.style.display = "none";
+            const loadingLabel = document.getElementById("loading-label");
+            if (loadingLabel) loadingLabel.textContent = "";
             viewDirty = true; // camera may have moved while sorting
         }
     };
@@ -600,6 +602,9 @@ async function main() {
     }
     window.addEventListener("keydown", (e) => {
         activeKeys.add(e.code);
+        if (e.code === "KeyB" && !e.target.matches("input,textarea,select")) {
+            overlayOpen ? closeOverlay() : openOverlay();
+        }
         if (ENABLE_SAVE_VIEW && e.code === "KeyV") {
             isSaving = true;
             const pos = cameraPosition.map(p => Math.round(p*100)/100);
@@ -625,9 +630,17 @@ async function main() {
 
     let overlayOpen   = false;
     let activeFilters = new Set();
+    let searchQuery   = "";
+    let sortOrder     = "default";
 
     function openOverlay()  { overlayOpen = true;  overlayEl.classList.add("open"); if (document.pointerLockElement) document.exitPointerLock(); refreshCacheState(); renderFilters(); renderSplatGrid(); }
     function closeOverlay() { overlayOpen = false; overlayEl.classList.remove("open"); }
+
+    // ── Search + Sort ─────────────────────────────────────────
+    const searchInput = document.getElementById("overlay-search");
+    const sortSelect  = document.getElementById("sort-select");
+    searchInput.addEventListener("input", () => { searchQuery = searchInput.value.trim().toLowerCase(); renderSplatGrid(); });
+    sortSelect.addEventListener("change", () => { sortOrder = sortSelect.value; renderSplatGrid(); });
 
     async function refreshCacheState() {
         cachedSplatUrls = await getCachedKeys();
@@ -693,16 +706,41 @@ async function main() {
 
     function renderSplatGrid() {
         splatGridEl.innerHTML = "";
-        const filtered = splatLibrary.filter(s => {
-            if (!activeFilters.size) return true;
-            for (const [key, cat] of Object.entries(splatCategories)) {
-                const catTags = Array.isArray(cat) ? cat : (cat.tags || []);
-                const active  = catTags.filter(t => activeFilters.has(t));
-                if (!active.length) continue;
-                if (!active.some(t => (s.tags || []).includes(t))) return false;
+        let filtered = splatLibrary.filter(s => {
+            if (!activeFilters.size && !searchQuery) return true;
+            // tag filters (category-AND, within-category-OR)
+            if (activeFilters.size) {
+                for (const [key, cat] of Object.entries(splatCategories)) {
+                    const catTags = Array.isArray(cat) ? cat : (cat.tags || []);
+                    const active  = catTags.filter(t => activeFilters.has(t));
+                    if (!active.length) continue;
+                    if (!active.some(t => (s.tags || []).includes(t))) return false;
+                }
+            }
+            // text search
+            if (searchQuery) {
+                const hay = (s.name + " " + (s.desc || "") + " " + (s.tags || []).join(" ")).toLowerCase();
+                if (!hay.includes(searchQuery)) return false;
             }
             return true;
         });
+
+        // Sort
+        filtered = [...filtered]; // don't mutate
+        if (sortOrder === "name") {
+            filtered.sort((a, b) => a.name.localeCompare(b.name, 'da'));
+        } else if (sortOrder === "size-desc") {
+            filtered.sort((a, b) => (b.vertexCount || 0) - (a.vertexCount || 0));
+        } else if (sortOrder === "size-asc") {
+            filtered.sort((a, b) => (a.vertexCount || 0) - (b.vertexCount || 0));
+        } else if (sortOrder === "year-desc") {
+            filtered.sort((a, b) => {
+                const ya = (a.tags || []).find(t => /^\d{4}$/.test(t)) || "0";
+                const yb = (b.tags || []).find(t => /^\d{4}$/.test(t)) || "0";
+                return yb.localeCompare(ya);
+            });
+        }
+
         overlayCountEl.textContent = filtered.length > 0 ? `(${filtered.length})` : "";
         if (!filtered.length) {
             const empty = document.createElement("div"); empty.id = "overlay-empty"; empty.textContent = "Ingen scener fundet."; splatGridEl.appendChild(empty); return;
@@ -723,10 +761,12 @@ async function main() {
                 return               { label:"Gigantic", cls:"size-gigantic" };
             }
             const si = splatSizeLabel(splat.vertexCount);
+            const vcFormatted = splat.vertexCount ? (splat.vertexCount >= 1e6 ? (splat.vertexCount/1e6).toFixed(1)+"M" : (splat.vertexCount/1e3).toFixed(0)+"K") + " splats" : "";
             const sizeBadge = si ? `<div class="splat-size-badge ${si.cls}">${si.label}</div>` : "";
             let resolvedUrl = ''; try { resolvedUrl = new URL(splat.splat || location.href).href; } catch {}
             const cacheBadge = resolvedUrl && cachedSplatUrls.has(resolvedUrl) ? `<div class="splat-cache-badge">✓ Cached</div>` : "";
-            card.innerHTML = `<div class="splat-card-thumb">${thumb}</div>${sizeBadge}${cacheBadge}${activeBadge}<div class="splat-card-body"><div class="splat-card-name">${splat.name}</div><div class="splat-card-meta">${tagsHtml}</div></div>`;
+            const descHtml = splat.desc ? `<div class="splat-card-desc">${splat.desc}</div>` : "";
+            card.innerHTML = `<div class="splat-card-thumb">${thumb}</div>${sizeBadge}${cacheBadge}${activeBadge}<div class="splat-card-body"><div class="splat-card-name">${splat.name}</div>${descHtml}<div class="splat-card-meta">${tagsHtml}${vcFormatted ? `<span class="splat-year">${vcFormatted}</span>` : ""}</div></div>`;
             card.addEventListener("click", () => {
                 closeOverlay();
                 if (realIndex === activeSplatIndex) return;
@@ -788,6 +828,10 @@ async function main() {
         progressEl.style.display = "";
         progressEl.style.width   = "0%";
         progressEl.classList.remove("indeterminate");
+
+        // ── Loading label ─────────────────────────────────────
+        const loadingLabel = document.getElementById("loading-label");
+        if (loadingLabel) loadingLabel.textContent = `Indlæser ${splat.name}…`;
 
         // ── Cache check ──────────────────────────────────────
         let arrayBuf = await getCachedSplat(splatUrl);
@@ -978,5 +1022,3 @@ async function main() {
         } catch (err) { console.error("Failed to parse hash:", err); }
     });
 }
-
-// (main is started by loadSplatLibraryAndStart above)

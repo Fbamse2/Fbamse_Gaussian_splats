@@ -75,13 +75,13 @@
             "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.png",
             "splat": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_havn_splat_93c6b27a-06e9-44f2-8fe7-f44ccb701168.splat",
             "cameraPosition": [
-                80.3,
-                -50.18,
-                -20.28
+                -93.71,
+                -55.54,
+                -28.71
             ],
             "cameraRotation": [
-                -4.99,
-                -0.66,
+                1.25,
+                -0.59,
                 0
             ],
             "lat": 55.609123,
