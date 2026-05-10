@@ -247,13 +247,13 @@
             "image": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_Kalv_I_Bronze_Splat_12f3a677-5794-46aa-8113-5adca2930a69.png",
             "splat": "https://huggingface.co/fbamse1/Fbamse_Gaussian_splats/resolve/main/brøndby_Kalv_I_Bronze_Splat_12f3a677-5794-46aa-8113-5adca2930a69.splat",
             "cameraPosition": [
-                35.83,
-                -26.27,
-                -18.27
+                21.13,
+                -14.25,
+                -12.39
             ],
             "cameraRotation": [
-                -1.19,
-                -0.62,
+                -1.02,
+                -0.35,
                 0
             ],
             "lat": 55.61931552268244,
