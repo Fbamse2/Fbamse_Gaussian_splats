@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+	<title>Gaussian Splat Viewer</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<link rel="stylesheet" href="src/style.css" />
+</head>
+
+<body>
+	<script>
+		if (location.host.includes('hf.space')) document.body.classList.add('nohf');
+	</script>
+
+	<canvas id="canvas"></canvas>
+
+	<!-- ═══ Settings dropdown — top-level (fixed positioning) ═══ -->
+	<div id="settings-dropdown">
+		<div class="settings-title">Cache</div>
+		<div class="settings-row">
+			<span class="settings-label">Splat data + images</span>
+			<button id="clear-cache-btn">Clear all</button>
+		</div>
+		<div class="settings-row">
+			<span class="settings-label">Persist cache across tabs</span>
+			<label class="settings-toggle">
+				<input type="checkbox" id="persist-cache-toggle" />
+				<span class="toggle-track"></span>
+			</label>
+		</div>
+		<div class="settings-row">
+			<span class="settings-label">Pre-cache all splats</span>
+			<button id="download-all-btn">Download All</button>
+		</div>
+
+		<div class="settings-title settings-render">Render</div>
+		<div class="settings-row settings-render">
+			<span class="settings-label">Shader</span>
+			<select id="shader-select" class="settings-select">
+				<!-- populated by JS from SHADER_MODES -->
+			</select>
+		</div>
+		<div class="settings-row settings-render" id="depth-slider-row" style="display:none">
+			<span class="settings-label">Depth range <span id="depth-scale-val">0.020</span></span>
+			<input type="range" id="depth-scale-slider" min="0.001" max="0.15" step="0.001" value="0.02" />
+			<button class="slider-reset" data-target="depth-scale-slider" data-default="0.02" title="Reset">⟲</button>
+		</div>
+
+		<div class="settings-title settings-movement">Movement</div>
+		<div class="settings-row settings-movement">
+			<span class="settings-label">Speed <span id="speed-val">1.0x</span></span>
+			<input type="range" id="speed-slider" min="0.1" max="5" step="0.1" value="1" />
+			<button class="slider-reset" data-target="speed-slider" data-default="1" title="Reset">⟲</button>
+		</div>
+
+		<div class="settings-title settings-camera">Camera</div>
+		<div class="settings-row settings-camera">
+			<span class="settings-label">FOV <span id="fov-val">100%</span></span>
+			<input type="range" id="fov-slider" min="0.4" max="2.0" step="0.05" value="1" />
+			<button class="slider-reset" data-target="fov-slider" data-default="1" title="Reset">⟲</button>
+		</div>
+
+		<div class="settings-title settings-actions">Actions</div>
+		<div class="settings-row settings-actions">
+			<span class="settings-label">Screenshot</span>
+			<button id="screenshot-btn">📷 Capture</button>
+		</div>
+		<div class="settings-row settings-actions">
+			<span class="settings-label">Share camera position</span>
+			<button id="copy-link-btn">🔗 Copy Link</button>
+		</div>
+	</div>
+
+	<!-- ═══ Top HUD ═══ -->
+	<div id="hud-top">
+		<div id="hud-left">
+			<button id="splat-browser-btn" title="Browse scenes (B)">
+				<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+			</button>
+			<button id="hud-settings-btn" title="Settings">⚙️</button>
+			<button id="presets-btn" title="Camera captures (K)">
+				<svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+			</button>
+			<span id="app-title" class="nohf">Splat Viewer</span>
+		</div>
+		<div id="hud-right">
+			<span id="fps"></span>
+		</div>
+	</div>
+
+	<!-- ═══ Splat browser overlay ═══ -->
+	<div id="splat-overlay">
+		<div id="overlay-header">
+			<button id="overlay-close" title="Close">✕</button>
+			<span id="overlay-title">Gaussian Splats [Scenes]</span>
+			<span id="overlay-count"></span>
+			<button id="overlay-map-btn" title="World map">🗺️</button>
+			<button id="overlay-settings-btn" title="Settings">⚙️</button>
+		</div>
+		<div id="overlay-search-bar">
+			<div id="search-wrap">
+				<span id="search-icon"><svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="17" y2="17"/></svg></span>
+				<input id="overlay-search" type="search" placeholder="Søg scener…" autocomplete="off" spellcheck="false" />
+			</div>
+			<select id="sort-select" title="Sort order">
+				<option value="default">Standard</option>
+				<option value="name">Navn A–Z</option>
+				<option value="size-desc">Størst først</option>
+				<option value="size-asc">Mindst først</option>
+				<option value="year-desc">Nyeste først</option>
+			</select>
+		</div>
+		<div id="overlay-filters"><!-- populated by JS --></div>
+		<div id="splat-grid"><!-- populated by JS --></div>
+	</div>
+
+	<!-- ═══ Camera captures overlay ═══ -->
+	<div id="presets-overlay">
+		<div id="presets-header">
+			<button id="presets-close" title="Close">✕</button>
+			<span id="presets-title">Camera Captures</span>
+			<span id="presets-count"></span>
+			<button id="presets-master-btn" title="Enable delete mode">🔒</button>
+		</div>
+		<div id="presets-grid"><!-- populated by JS --></div>
+	</div>
+
+	<!-- ═══ Map overlay ═══ -->
+	<div id="map-overlay">
+		<div id="map-header">
+			<button id="map-close" title="Close map">✕</button>
+			<span id="map-title">Scene Locations</span>
+		</div>
+		<div id="leaflet-map"></div>
+	</div>
+
+	<!-- ═══ Compare mode overlay ═══ -->
+	<div id="compare-overlay">
+		<img id="compare-img-a" alt="Scene A" />
+		<div id="compare-drag"></div>
+		<div id="compare-label-a" class="compare-label">Scene A</div>
+		<div id="compare-label-b" class="compare-label">Scene B</div>
+		<button id="compare-close-btn" title="Exit compare">✕</button>
+	</div>
+
+	<!-- ═══ Progress + spinner ═══ -->
+	<div id="progress"></div>
+	<div id="message"></div>
+	<div class="scene" id="spinner">
+		<div class="cube-wrapper">
+			<div class="cube">
+				<div class="cube-faces">
+					<div class="cube-face bottom"></div>
+					<div class="cube-face top"></div>
+					<div class="cube-face left"></div>
+					<div class="cube-face right"></div>
+					<div class="cube-face back"></div>
+					<div class="cube-face front"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="loading-label"></div>
+
+	<!-- ═══ Toast container ═══ -->
+	<div id="toast-container"></div>
+
+	<!-- ═══ Help ═══ -->
+	<button id="help-toggle" title="Controls">?</button>
+	<div id="help-panel">
+		<h4>Controls</h4>
+		<div class="help-row"><span>Move</span><span><span class="help-key">W</span><span class="help-key">A</span><span class="help-key">S</span><span class="help-key">D</span></span></div>
+		<div class="help-row"><span>Up / Down</span><span><span class="help-key">Space</span> / <span class="help-key">Ctrl</span></span></div>
+		<div class="help-row"><span>Sprint</span><span><span class="help-key">Shift</span></span></div>
+		<div class="help-row"><span>Look</span><span>Click + Mouse</span></div>
+		<div class="help-row"><span>Release mouse</span><span><span class="help-key">Esc</span></span></div>
+		<div class="help-row"><span>Browse scenes</span><span><span class="help-key">B</span></span></div>
+		<div class="help-row"><span>Capture view</span><span><span class="help-key">C</span></span></div>
+		<div class="help-row"><span>View captures</span><span><span class="help-key">K</span></span></div>
+		<div id="help-save-view-row" class="help-row"><span>Save view</span><span><span class="help-key">V</span></span></div>
+		<div class="help-row" style="margin-top:6px;color:rgba(255,255,255,0.4);font-size:10px;"><span>Drop .ply to load</span></div>
+	</div>
+
+	<!-- ═══ Mobile joysticks ═══ -->
+	<div id="joystick-left">
+		<div class="joystick-knob" id="knob-left"></div>
+		<div class="joystick-label">Move</div>
+	</div>
+	<div id="joystick-right">
+		<div class="joystick-knob" id="knob-right"></div>
+		<div class="joystick-label">Look</div>
+	</div>
+
+	<script type="module" src="src/main.js"></script>
+</body>
+
+</html>
