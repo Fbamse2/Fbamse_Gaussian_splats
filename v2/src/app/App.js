@@ -8,7 +8,8 @@ import { init as initTouch }      from '../input/TouchInput.js';
 import { loadSplat, initFileDrop } from '../loaders/SplatLoader.js';
 import { init as initSidebar, openOverlay, closeOverlay, renderSplatGrid } from '../ui/Sidebar.js';
 import { init as initCapture, openPresetsGallery, closePresetsGallery, capturePreset } from '../ui/CaptureGallery.js';
-import { init as initMap }        from '../ui/MapOverlay.js';
+import { init as initMap, openMap, closeMap } from '../ui/MapOverlay.js';
+import { initRouting, syncRouteFromUi } from './Router.js';
 
 export async function init() {
     // ── Load splat library ────────────────────────────────────────
@@ -45,6 +46,19 @@ export async function init() {
     initMap();
     initFileDrop();
 
+    initRouting({
+        openOverlay,
+        closeOverlay,
+        openMap,
+        closeMap,
+        renderSplatGrid,
+        loadSplatByIndex: (index) => {
+            const splat = state.splatLibrary[index];
+            if (!splat) return;
+            loadSplat(splat);
+        },
+    });
+
     // ── Wire keyboard callbacks ───────────────────────────────────
     onKeyB(() => state.overlayOpen  ? closeOverlay()        : openOverlay());
     onKeyK(() => state.presetsOpen  ? closePresetsGallery() : openPresetsGallery());
@@ -66,6 +80,8 @@ export async function init() {
         delete splatNoCamera.cameraRotation;
         loadSplat(splatNoCamera);
     }
+
+    syncRouteFromUi({ replace: true });
 
     // ── Start render loop ─────────────────────────────────────────
     startLoop();

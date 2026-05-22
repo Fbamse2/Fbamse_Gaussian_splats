@@ -4,6 +4,7 @@ import { showToast }         from './Toast.js';
 import { getCachedKeys, clearSplatCache, getCachedImage, setCachedImage, clearImageCache } from '../gaussian/GaussianCache.js';
 import { loadSplat }         from '../loaders/SplatLoader.js';
 import { setShaderMode, setDepthScale, setFovScale, getDepthScale, SHADER_MODES } from '../renderer/Renderer.js';
+import { syncRouteFromUi } from '../app/Router.js';
 
 const overlayEl      = document.getElementById('splat-overlay');
 const browserBtn     = document.getElementById('splat-browser-btn');
@@ -75,12 +76,14 @@ export function openOverlay() {
     _refreshCacheState();
     _renderFilters();
     _renderSplatGrid();
+    syncRouteFromUi();
 }
 
 export function closeOverlay() {
     state.overlayOpen = false;
     overlayEl.classList.remove('open');
     sessionStorage.removeItem('overlayWasOpen');
+    syncRouteFromUi();
 }
 
 async function _refreshCacheState() {
@@ -285,6 +288,7 @@ function _renderSplatGrid() {
             const wasActive = realIndex === state.activeSplatIndex;
             state.activeSplatIndex = realIndex;
             localStorage.setItem('activeSplatIndex', realIndex);
+            syncRouteFromUi();
             splatGridEl.querySelectorAll('.splat-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
 

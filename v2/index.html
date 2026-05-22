@@ -15,6 +15,19 @@
 
 <body>
 	<script>
+		(function() {
+			const params = new URLSearchParams(location.search);
+			const redirect = params.get('redirect');
+			if (!redirect) return;
+			try {
+				const target = new URL(redirect, location.origin);
+				history.replaceState(null, '', target.pathname + target.search + target.hash);
+			} catch {
+				history.replaceState(null, '', '/');
+			}
+		})();
+	</script>
+	<script>
 		if (location.host.includes('hf.space')) document.body.classList.add('nohf');
 	</script>
 

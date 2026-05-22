@@ -61,6 +61,7 @@ export const state = {
     // Overlay state
     overlayOpen:  false,
     presetsOpen:  false,
+    mapOpen:      false,
 
     // Loading generation counter — incremented on each new load to cancel stale fetches
     loadGen: 0,

@@ -2,6 +2,7 @@ import { state }    from '../app/State.js';
 import { loadSplat } from '../loaders/SplatLoader.js';
 import { closeOverlay } from './Sidebar.js';
 import { getCachedImage, setCachedImage } from '../gaussian/GaussianCache.js';
+import { syncRouteFromUi } from '../app/Router.js';
 
 const mapOverlayEl = document.getElementById('map-overlay');
 const mapOpenBtn   = document.getElementById('overlay-map-btn');
@@ -35,9 +36,11 @@ async function _resolveImageUrl(url) {
     }
 }
 
-async function openMap() {
+export async function openMap() {
+    state.mapOpen = true;
     mapOverlayEl.classList.add('open');
     sessionStorage.setItem('mapWasOpen', '1');
+    syncRouteFromUi();
 
     if (!leafletMap) {
         // Restore saved center/zoom if available
@@ -126,9 +129,11 @@ function _loadMapView() {
     try { return JSON.parse(sessionStorage.getItem('mapView')); } catch { return null; }
 }
 
-function closeMap() {
+export function closeMap() {
+    state.mapOpen = false;
     mapOverlayEl.classList.remove('open');
     sessionStorage.removeItem('mapWasOpen');
+    syncRouteFromUi();
 }
 
 window.activateSplatFromMap = function(idx) {
@@ -139,6 +144,7 @@ window.activateSplatFromMap = function(idx) {
     closeMap();
     closeOverlay();
     loadSplat(splat);
+    syncRouteFromUi();
 };
 
 export function init() {
