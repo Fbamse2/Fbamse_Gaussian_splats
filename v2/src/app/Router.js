@@ -71,6 +71,7 @@ function applyRoute(route, { loadSplat = false } = {}) {
 
     suppressRouteSync = true;
     try {
+        let didChangeIndex = false;
         let targetIndex = route.index;
         if (targetIndex === null || targetIndex < 0 || targetIndex >= state.splatLibrary.length) {
             targetIndex = state.activeSplatIndex;
@@ -80,6 +81,7 @@ function applyRoute(route, { loadSplat = false } = {}) {
             state.activeSplatIndex = targetIndex;
             localStorage.setItem('activeSplatIndex', String(targetIndex));
             routerHandlers.renderSplatGrid?.();
+            didChangeIndex = true;
         }
 
         if (route.view === 'map') {
@@ -97,7 +99,7 @@ function applyRoute(route, { loadSplat = false } = {}) {
 
         if (state.overlayOpen) routerHandlers.closeOverlay?.();
 
-        if (loadSplat && targetIndex >= 0 && targetIndex < state.splatLibrary.length) {
+        if (loadSplat && didChangeIndex && targetIndex >= 0 && targetIndex < state.splatLibrary.length) {
             routerHandlers.loadSplatByIndex?.(targetIndex);
         }
     } finally {
