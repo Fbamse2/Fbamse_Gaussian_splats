@@ -66,6 +66,10 @@ export const state = {
     // Loading generation counter — incremented on each new load to cancel stale fetches
     loadGen: 0,
 
+    // Loader bookkeeping to prevent duplicate same-scene reload loops
+    loadingSplatUrl: null,
+    loadedSplatUrl:  null,
+
     // True when a camera was saved from a previous session (for this splat or from URL hash)
     hasPersistedCamera: _cameraMatchesSplat,
 

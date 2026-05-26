@@ -30,8 +30,11 @@ function parseRouteFromLocation() {
 
     if (parts[0] === 'splat') {
         const slug = parts[1] || null;
-        const idxParam = Number(new URLSearchParams(location.search).get('i'));
-        const indexFromQuery = Number.isInteger(idxParam) ? idxParam : null;
+        const rawIndexParam = new URLSearchParams(location.search).get('i');
+        const parsedIndex = rawIndexParam !== null && rawIndexParam !== ''
+            ? Number(rawIndexParam)
+            : NaN;
+        const indexFromQuery = Number.isInteger(parsedIndex) ? parsedIndex : null;
 
         if (indexFromQuery !== null && indexFromQuery >= 0 && indexFromQuery < state.splatLibrary.length) {
             return { view: 'splat', index: indexFromQuery };

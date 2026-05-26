@@ -262,8 +262,15 @@ function _renderSplatGrid() {
             <div class="splat-card-thumb">
                 ${thumb}
                 <button class="splat-fav-btn${isFav ? ' starred' : ''}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '⭐' : '☆'}</button>
+                <div class="splat-card-overlay">
+                    <div class="splat-card-overlay-left">
+                        ${sizeBadge}${warnBadge}${cacheBadge}
+                    </div>
+                    <div class="splat-card-overlay-right">
+                        ${activeBadge}
+                    </div>
+                </div>
             </div>
-            ${sizeBadge}${warnBadge}${cacheBadge}${activeBadge}
             <div class="splat-dl-overlay" style="display:none">
                 <div class="splat-dl-pct"></div>
                 <div class="splat-dl-bar-track"><div class="splat-dl-bar"></div></div>
@@ -312,7 +319,7 @@ function _renderSplatGrid() {
                         const cb = document.createElement('div');
                         cb.className = 'splat-cache-badge';
                         cb.textContent = '✓ Cached';
-                        card.insertBefore(cb, card.querySelector('.splat-card-body'));
+                        card.querySelector('.splat-card-overlay-left')?.appendChild(cb);
                         cachedSplatUrls.add(resolvedUrl);
                     }
                     clearTimeout(dlTimer);

@@ -14,7 +14,7 @@ import { initRouting, syncRouteFromUi } from './Router.js';
 export async function init() {
     // ── Load splat library ────────────────────────────────────────
     try {
-        const resp = await fetch('splats.json');
+        const resp = await fetch('/splats.json');
         if (!resp.ok) throw new Error('Failed to load splats.json');
         const data = await resp.json();
         if (Array.isArray(data)) {

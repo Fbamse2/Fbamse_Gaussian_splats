@@ -54,69 +54,81 @@ async function _fetchAndCache(url, progressCbs) {
 
 export async function loadSplat(splat, { onProgress } = {}) {
     const myGen = ++state.loadGen;
-    const splatUrl = new URL(splat.splat).href;
+    const splatUrl = new URL(splat.splat, location.href).href;
 
-    if (splat.cameraPosition && splat.cameraRotation) resetToSplatCamera(splat);
-    state.vertexCount   = 0;
-    state.texAllocWidth  = 0;
-    state.texAllocHeight = 0;
-
-    showSpinner();
-    setProgress(0);
-    setLabel(`Indlæser ${splat.name}…`);
-
-    // ── Acquire the buffer ────────────────────────────────────────────
-    let arrayBuf = await getCachedSplat(splatUrl);
-
-    if (!arrayBuf) {
-        // Spinner tracks priority download only
-        const spinnerCb = (pct) => { if (myGen === state.loadGen) setProgress(pct); };
-
-        if (pendingDownloads.has(splatUrl)) {
-            // Attach to existing in-flight download
-            const entry = pendingDownloads.get(splatUrl);
-            entry.progressCbs.add(spinnerCb);
-            if (onProgress) entry.progressCbs.add(onProgress);
-            try { arrayBuf = await entry.promise; }
-            catch { return; }
-            entry.progressCbs.delete(spinnerCb);
-        } else {
-            // Start a new download
-            const progressCbs = new Set([spinnerCb]);
-            if (onProgress) progressCbs.add(onProgress);
-            const promise = _fetchAndCache(splatUrl, progressCbs)
-                .finally(() => pendingDownloads.delete(splatUrl));
-            pendingDownloads.set(splatUrl, { promise, progressCbs });
-            try { arrayBuf = await promise; }
-            catch (err) { console.error('Fetch error:', err); return; }
-        }
+    if (state.loadingSplatUrl === splatUrl || state.loadedSplatUrl === splatUrl) {
+        return;
     }
+    state.loadingSplatUrl = splatUrl;
 
-    // Only the most recently clicked splat renders
-    if (myGen !== state.loadGen) return;
+    try {
+        if (splat.cameraPosition && splat.cameraRotation) resetToSplatCamera(splat);
+        state.vertexCount   = 0;
+        state.texAllocWidth  = 0;
+        state.texAllocHeight = 0;
 
-    setIndeterminate();
-    state.viewDirty = true;
+        showSpinner();
+        setProgress(0);
+        setLabel(`Indlæser ${splat.name}…`);
 
-    const splatScale = splat.scale ?? 1;
-    if (splatScale !== 1) {
-        const fv  = new Float32Array(arrayBuf);
-        const vc_s = (arrayBuf.byteLength / ROW_LENGTH) | 0;
-        for (let i = 0; i < vc_s; i++) {
-            const b = i * 8;
-            fv[b]   *= splatScale; fv[b+1] *= splatScale; fv[b+2] *= splatScale;
-            fv[b+3] *= splatScale; fv[b+4] *= splatScale; fv[b+5] *= splatScale;
+        // ── Acquire the buffer ────────────────────────────────────────────
+        let arrayBuf = await getCachedSplat(splatUrl);
+
+        if (!arrayBuf) {
+            // Spinner tracks priority download only
+            const spinnerCb = (pct) => { if (myGen === state.loadGen) setProgress(pct); };
+
+            if (pendingDownloads.has(splatUrl)) {
+                // Attach to existing in-flight download
+                const entry = pendingDownloads.get(splatUrl);
+                entry.progressCbs.add(spinnerCb);
+                if (onProgress) entry.progressCbs.add(onProgress);
+                try { arrayBuf = await entry.promise; }
+                catch { return; }
+                entry.progressCbs.delete(spinnerCb);
+            } else {
+                // Start a new download
+                const progressCbs = new Set([spinnerCb]);
+                if (onProgress) progressCbs.add(onProgress);
+                const promise = _fetchAndCache(splatUrl, progressCbs)
+                    .finally(() => pendingDownloads.delete(splatUrl));
+                pendingDownloads.set(splatUrl, { promise, progressCbs });
+                try { arrayBuf = await promise; }
+                catch (err) { console.error('Fetch error:', err); return; }
+            }
         }
-    }
 
-    const vc = (arrayBuf.byteLength / ROW_LENGTH) | 0;
-    postToWorker({ type: 'buffer', buffer: arrayBuf, vertexCount: vc }, [arrayBuf]);
+        // Only the most recently clicked splat renders
+        if (myGen !== state.loadGen) return;
+
+        setIndeterminate();
+        state.viewDirty = true;
+
+        const splatScale = splat.scale ?? 1;
+        if (splatScale !== 1) {
+            const fv  = new Float32Array(arrayBuf);
+            const vc_s = (arrayBuf.byteLength / ROW_LENGTH) | 0;
+            for (let i = 0; i < vc_s; i++) {
+                const b = i * 8;
+                fv[b]   *= splatScale; fv[b+1] *= splatScale; fv[b+2] *= splatScale;
+                fv[b+3] *= splatScale; fv[b+4] *= splatScale; fv[b+5] *= splatScale;
+            }
+        }
+
+        const vc = (arrayBuf.byteLength / ROW_LENGTH) | 0;
+        state.loadedSplatUrl = splatUrl;
+        postToWorker({ type: 'buffer', buffer: arrayBuf, vertexCount: vc }, [arrayBuf]);
+    } finally {
+        if (state.loadingSplatUrl === splatUrl) state.loadingSplatUrl = null;
+    }
 }
 
 export function initFileDrop() {
     const isPly = (d) => d[0]===112 && d[1]===108 && d[2]===121 && d[3]===10;
     const selectFile = (file) => {
         ++state.loadGen;
+        state.loadingSplatUrl = null;
+        state.loadedSplatUrl = null;
         const fr = new FileReader();
         fr.onload = () => {
             const buf = fr.result;
