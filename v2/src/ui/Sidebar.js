@@ -187,6 +187,55 @@ function _splatSizeLabel(vc) {
     return                    { label:'Gigantic', cls:'size-gigantic' };
 }
 
+function _markSplatCached(splatUrl, card = null) {
+    if (!splatUrl) return;
+    cachedSplatUrls.add(splatUrl);
+
+    const targetCard = card || splatGridEl.querySelector(`.splat-card[data-splat-url="${encodeURIComponent(splatUrl)}"]`);
+    if (!targetCard) return;
+
+    if (!targetCard.querySelector('.splat-cache-badge')) {
+        const cb = document.createElement('div');
+        cb.className = 'splat-cache-badge';
+        cb.textContent = '✓ Cached';
+        targetCard.querySelector('.splat-card-overlay-left')?.appendChild(cb);
+    }
+}
+
+function _updateSplatDownloadUi(splatUrl, pct, card = null) {
+    if (!splatUrl) return;
+
+    const targetCard = card || splatGridEl.querySelector(`.splat-card[data-splat-url="${encodeURIComponent(splatUrl)}"]`);
+    if (!targetCard) return;
+
+    const dlOverlay = targetCard.querySelector('.splat-dl-overlay');
+    const dlPct = targetCard.querySelector('.splat-dl-pct');
+    const dlBar = targetCard.querySelector('.splat-dl-bar');
+    if (!dlOverlay || !dlPct || !dlBar) return;
+
+    if (pct < 100) {
+        dlOverlay.style.display = '';
+        dlPct.textContent = pct + '%';
+        dlBar.style.width = pct + '%';
+        if (targetCard.__dlHideTimer) {
+            clearTimeout(targetCard.__dlHideTimer);
+            targetCard.__dlHideTimer = null;
+        }
+        return;
+    }
+
+    dlOverlay.style.display = '';
+    dlPct.textContent = '✓';
+    dlBar.style.width = '100%';
+    _markSplatCached(splatUrl, targetCard);
+
+    if (targetCard.__dlHideTimer) clearTimeout(targetCard.__dlHideTimer);
+    targetCard.__dlHideTimer = setTimeout(() => {
+        dlOverlay.style.display = 'none';
+        targetCard.__dlHideTimer = null;
+    }, 5000);
+}
+
 function _renderSplatGrid() {
     splatGridEl.innerHTML = '';
     let filtered = state.splatLibrary.filter(s => {
@@ -237,6 +286,7 @@ function _renderSplatGrid() {
         const card = document.createElement('div');
         card.className = 'splat-card' + (realIndex === state.activeSplatIndex ? ' active' : '');
         let resolvedUrl = ''; try { resolvedUrl = new URL(splat.splat || location.href).href; } catch {}
+        card.dataset.splatUrl = encodeURIComponent(resolvedUrl);
         const isFav = favorites.has(resolvedUrl);
 
         const thumb = splat.image
@@ -287,10 +337,6 @@ function _renderSplatGrid() {
             _toggleFavorite(resolvedUrl);
         });
 
-        const dlOverlay = card.querySelector('.splat-dl-overlay');
-        const dlPct     = dlOverlay.querySelector('.splat-dl-pct');
-        const dlBar     = dlOverlay.querySelector('.splat-dl-bar');
-
         card.addEventListener('click', () => {
             const wasActive = realIndex === state.activeSplatIndex;
             state.activeSplatIndex = realIndex;
@@ -306,25 +352,8 @@ function _renderSplatGrid() {
             }
             if (wasActive) return;
 
-            let dlTimer = null;
             const onProgress = (pct) => {
-                if (pct < 100) {
-                    dlOverlay.style.display = '';
-                    dlPct.textContent = pct + '%';
-                    dlBar.style.width = pct + '%';
-                } else {
-                    dlPct.textContent = '✓';
-                    dlBar.style.width = '100%';
-                    if (!card.querySelector('.splat-cache-badge')) {
-                        const cb = document.createElement('div');
-                        cb.className = 'splat-cache-badge';
-                        cb.textContent = '✓ Cached';
-                        card.querySelector('.splat-card-overlay-left')?.appendChild(cb);
-                        cachedSplatUrls.add(resolvedUrl);
-                    }
-                    clearTimeout(dlTimer);
-                    dlTimer = setTimeout(() => { dlOverlay.style.display = 'none'; }, 5000);
-                }
+                _updateSplatDownloadUi(resolvedUrl, pct, card);
             };
             loadSplat(splat, { onProgress });
         });
@@ -349,12 +378,25 @@ async function _downloadAll() {
         return;
     }
     let done = 0;
+    const completedUrls = new Set();
     const updateBtn = () => { if (btn) btn.textContent = `${done}/${uncached.length} cached`; };
     updateBtn();
     for (const s of uncached) {
-        loadSplat(s, { onProgress: (pct) => { if (pct === 100) { done++; updateBtn(); } } });
+        let splatUrl = '';
+        try { splatUrl = new URL(s.splat || '', location.href).href; } catch {}
+        loadSplat(s, {
+            onProgress: (pct) => {
+                if (!splatUrl) return;
+                _updateSplatDownloadUi(splatUrl, pct);
+                if (pct !== 100 || completedUrls.has(splatUrl)) return;
+                completedUrls.add(splatUrl);
+                done++;
+                updateBtn();
+            }
+        });
         await new Promise(r => setTimeout(r, 300)); // slight stagger
     }
+    if (state.overlayOpen) _renderSplatGrid();
     if (btn) setTimeout(() => { btn.textContent = 'Download All'; btn.disabled = false; }, 3000);
 }
 
