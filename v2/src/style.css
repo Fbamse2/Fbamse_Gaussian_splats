@@ -280,6 +280,19 @@ body {
 	color: #111827;
 }
 
+/* Keep shader dropdown options readable in native popup lists */
+#shader-select {
+	background: #f3f4f6;
+	color: #111827;
+	border-color: rgba(17,24,39,0.18);
+	color-scheme: light;
+}
+#shader-select:focus { border-color: #6366f1; }
+#shader-select option {
+	background: #ffffff;
+	color: #111827;
+}
+
 /* ── Search + Sort toolbar ── */
 #overlay-search-bar {
 	display: flex;
